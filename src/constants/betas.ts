@@ -20,9 +20,6 @@ export const FAST_MODE_BETA_HEADER = 'fast-mode-2026-02-01'
 export const REDACT_THINKING_BETA_HEADER = 'redact-thinking-2026-02-12'
 export const TOKEN_EFFICIENT_TOOLS_BETA_HEADER =
   'token-efficient-tools-2026-03-28'
-export const SUMMARIZE_CONNECTOR_TEXT_BETA_HEADER = feature('CONNECTOR_TEXT')
-  ? 'summarize-connector-text-2026-03-13'
-  : ''
 export const AFK_MODE_BETA_HEADER = feature('TRANSCRIPT_CLASSIFIER')
   ? 'afk-mode-2026-01-31'
   : ''
@@ -50,4 +47,4 @@ export const VERTEX_COUNT_TOKENS_ALLOWED_BETAS = new Set([
   INTERLEAVED_THINKING_BETA_HEADER,
   CONTEXT_MANAGEMENT_BETA_HEADER,
 ])
-export const CACHE_EDITING_BETA_HEADER: any = (() => {}) as any;
+export const CACHE_EDITING_BETA_HEADER: string = '';

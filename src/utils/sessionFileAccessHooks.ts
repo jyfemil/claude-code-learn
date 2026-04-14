@@ -10,16 +10,16 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../services/analytics/index.js'
-import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/constants.js'
-import { inputSchema as editInputSchema } from '../tools/FileEditTool/types.js'
-import { FileReadTool } from '../tools/FileReadTool/FileReadTool.js'
-import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js'
-import { FileWriteTool } from '../tools/FileWriteTool/FileWriteTool.js'
-import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js'
-import { GlobTool } from '../tools/GlobTool/GlobTool.js'
-import { GLOB_TOOL_NAME } from '../tools/GlobTool/prompt.js'
-import { GrepTool } from '../tools/GrepTool/GrepTool.js'
-import { GREP_TOOL_NAME } from '../tools/GrepTool/prompt.js'
+import { FILE_EDIT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/FileEditTool/constants.js'
+import { inputSchema as editInputSchema } from '@claude-code-best/builtin-tools/tools/FileEditTool/types.js'
+import { FileReadTool } from '@claude-code-best/builtin-tools/tools/FileReadTool/FileReadTool.js'
+import { FILE_READ_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/FileReadTool/prompt.js'
+import { FileWriteTool } from '@claude-code-best/builtin-tools/tools/FileWriteTool/FileWriteTool.js'
+import { FILE_WRITE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/FileWriteTool/prompt.js'
+import { GlobTool } from '@claude-code-best/builtin-tools/tools/GlobTool/GlobTool.js'
+import { GLOB_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/GlobTool/prompt.js'
+import { GrepTool } from '@claude-code-best/builtin-tools/tools/GrepTool/GrepTool.js'
+import { GREP_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/GrepTool/prompt.js'
 import type { HookCallback } from '../types/hooks.js'
 import {
   detectSessionFileType,
@@ -151,8 +151,8 @@ async function handleSessionFileAccess(
   if (input.hook_event_name !== 'PostToolUse') return {}
 
   const fileType = getSessionFileTypeFromInput(
-    input.tool_name,
-    input.tool_input,
+    input.tool_name as string,
+    input.tool_input as string,
   )
 
   const subagentName = getSubagentLogName()
@@ -165,7 +165,7 @@ async function handleSessionFileAccess(
   }
 
   // Memdir access tracking
-  const filePath = getFilePathFromInput(input.tool_name, input.tool_input)
+  const filePath = getFilePathFromInput(input.tool_name as string, input.tool_input as string)
   if (filePath && isAutoMemFile(filePath)) {
     logEvent('tengu_memdir_accessed', {
       tool: input.tool_name as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -215,8 +215,8 @@ async function handleSessionFileAccess(
         input.tool_name === FILE_WRITE_TOOL_NAME)
     ) {
       memoryShapeTelemetry!.logMemoryWriteShape(
-        input.tool_name,
-        input.tool_input,
+        input.tool_name as string,
+        input.tool_input as Record<string, unknown>,
         filePath,
         scope,
       )

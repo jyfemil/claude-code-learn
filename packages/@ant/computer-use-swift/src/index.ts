@@ -1,112 +1,71 @@
-interface DisplayGeometry {
-  width: number
-  height: number
-  scaleFactor: number
-  displayId: number
+/**
+ * @ant/computer-use-swift — macOS display, apps, and screenshot (Swift native)
+ *
+ * This package wraps the macOS-only Swift .node native module.
+ * For Windows/Linux, use src/utils/computerUse/platforms/ instead.
+ */
+
+export type {
+  DisplayGeometry,
+  PrepareDisplayResult,
+  AppInfo,
+  InstalledApp,
+  RunningApp,
+  ScreenshotResult,
+  ResolvePrepareCaptureResult,
+  WindowDisplayInfo,
+} from './backends/darwin.js'
+
+import type { ResolvePrepareCaptureResult } from './backends/darwin.js'
+
+function loadBackend() {
+  try {
+    if (process.platform === 'darwin') {
+      return require('./backends/darwin.js')
+    } else if (process.platform === 'win32') {
+      return require('./backends/win32.js')
+    } else if (process.platform === 'linux') {
+      return require('./backends/linux.js')
+    }
+  } catch {
+    return null
+  }
+  return null
 }
 
-interface PrepareDisplayResult {
-  activated: string
-  hidden: string[]
-}
-
-interface AppInfo {
-  bundleId: string
-  displayName: string
-}
-
-interface InstalledApp {
-  bundleId: string
-  displayName: string
-  path: string
-  iconDataUrl?: string
-}
-
-interface RunningApp {
-  bundleId: string
-  displayName: string
-}
-
-interface ScreenshotResult {
-  base64: string
-  width: number
-  height: number
-}
-
-interface ResolvePrepareCaptureResult {
-  base64: string
-  width: number
-  height: number
-}
-
-interface WindowDisplayInfo {
-  bundleId: string
-  displayIds: number[]
-}
-
-interface AppsAPI {
-  prepareDisplay(
-    allowlistBundleIds: string[],
-    surrogateHost: string,
-    displayId?: number,
-  ): Promise<PrepareDisplayResult>
-  previewHideSet(
-    bundleIds: string[],
-    displayId?: number,
-  ): Promise<Array<AppInfo>>
-  findWindowDisplays(
-    bundleIds: string[],
-  ): Promise<Array<WindowDisplayInfo>>
-  appUnderPoint(
-    x: number,
-    y: number,
-  ): Promise<AppInfo | null>
-  listInstalled(): Promise<InstalledApp[]>
-  iconDataUrl(path: string): string | null
-  listRunning(): RunningApp[]
-  open(bundleId: string): Promise<void>
-  unhide(bundleIds: string[]): Promise<void>
-}
-
-interface DisplayAPI {
-  getSize(displayId?: number): DisplayGeometry
-  listAll(): DisplayGeometry[]
-}
-
-interface ScreenshotAPI {
-  captureExcluding(
-    allowedBundleIds: string[],
-    quality: number,
-    targetW: number,
-    targetH: number,
-    displayId?: number,
-  ): Promise<ScreenshotResult>
-  captureRegion(
-    allowedBundleIds: string[],
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    outW: number,
-    outH: number,
-    quality: number,
-    displayId?: number,
-  ): Promise<ScreenshotResult>
-}
+const backend = loadBackend()
 
 export class ComputerUseAPI {
-  declare apps: AppsAPI
-  declare display: DisplayAPI
-  declare screenshot: ScreenshotAPI
+  apps = backend?.apps ?? {
+    async prepareDisplay() { return { activated: '', hidden: [] } },
+    async previewHideSet() { return [] },
+    async findWindowDisplays(ids: string[]) { return ids.map((b: string) => ({ bundleId: b, displayIds: [] as number[] })) },
+    async appUnderPoint() { return null },
+    async listInstalled() { return [] },
+    iconDataUrl() { return null },
+    listRunning() { return [] },
+    async open() { throw new Error('@ant/computer-use-swift: macOS only') },
+    async unhide() {},
+  }
 
-  declare resolvePrepareCapture: (
+  display = backend?.display ?? {
+    getSize() { throw new Error('@ant/computer-use-swift: macOS only') },
+    listAll() { throw new Error('@ant/computer-use-swift: macOS only') },
+  }
+
+  screenshot = backend?.screenshot ?? {
+    async captureExcluding() { throw new Error('@ant/computer-use-swift: macOS only') },
+    async captureRegion() { throw new Error('@ant/computer-use-swift: macOS only') },
+  }
+
+  async resolvePrepareCapture(
     allowedBundleIds: string[],
-    surrogateHost: string,
+    _surrogateHost: string,
     quality: number,
     targetW: number,
     targetH: number,
     displayId?: number,
-    autoResolve?: boolean,
-    doHide?: boolean,
-  ) => Promise<ResolvePrepareCaptureResult>
+  ): Promise<ResolvePrepareCaptureResult> {
+    return this.screenshot.captureExcluding(allowedBundleIds, quality, targetW, targetH, displayId)
+  }
 }

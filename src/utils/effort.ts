@@ -7,6 +7,8 @@ import { getAPIProvider } from './model/providers.js'
 import { get3PModelCapabilityOverride } from './model/modelSupportOverrides.js'
 import { isEnvTruthy } from './envUtils.js'
 import type { EffortLevel } from 'src/entrypoints/sdk/runtimeTypes.js'
+import { resolveAntModel } from './model/antModels.js'
+import { getAntModelOverrideConfig } from './model/antModels.js'
 
 export type { EffortLevel }
 
@@ -283,9 +285,9 @@ export function getDefaultEffortForModel(
     const config = getAntModelOverrideConfig()
     const isDefaultModel =
       config?.defaultModel !== undefined &&
-      model.toLowerCase() === config.defaultModel.toLowerCase()
+      model.toLowerCase() === (config.defaultModel as string).toLowerCase()
     if (isDefaultModel && config?.defaultModelEffortLevel) {
-      return config.defaultModelEffortLevel
+      return config.defaultModelEffortLevel as EffortValue
     }
     const antModel = resolveAntModel(model)
     if (antModel) {

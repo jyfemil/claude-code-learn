@@ -241,22 +241,22 @@ export async function processUserInput({
 
     // TODO: Clean this up
     if (hookResult.message) {
-      switch (hookResult.message.attachment.type) {
+      switch (hookResult.message.attachment!.type) {
         case 'hook_success':
-          if (!hookResult.message.attachment.content) {
+          if (!hookResult.message.attachment!.content) {
             // Skip if there is no content
             break
           }
           result.messages.push({
             ...hookResult.message,
             attachment: {
-              ...hookResult.message.attachment,
-              content: applyTruncation(hookResult.message.attachment.content),
+              ...hookResult.message.attachment!,
+              content: applyTruncation(hookResult.message.attachment!.content as string),
             },
-          })
+          } as AttachmentMessage)
           break
         default:
-          result.messages.push(hookResult.message)
+          result.messages.push(hookResult.message as AttachmentMessage)
           break
       }
     }

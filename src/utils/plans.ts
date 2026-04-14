@@ -11,7 +11,7 @@ import type {
   UserMessage,
 } from 'src/types/message.js'
 import { getPlanSlugCache, getSessionId } from '../bootstrap/state.js'
-import { EXIT_PLAN_MODE_V2_TOOL_NAME } from '../tools/ExitPlanModeTool/constants.js'
+import { EXIT_PLAN_MODE_V2_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
 import { getCwd } from './cwd.js'
 import { logForDebugging } from './debug.js'
 import { getClaudeConfigHomeDir } from './envUtils.js'
@@ -367,14 +367,14 @@ export async function persistFileSnapshotIfRemote(): Promise<void> {
     // Snapshot plan file
     const plan = getPlan()
     if (plan) {
-      snapshotFiles.push({
+      (snapshotFiles as any[]).push({
         key: 'plan',
         path: getPlanFilePath(),
         content: plan,
       })
     }
 
-    if (snapshotFiles.length === 0) {
+    if ((snapshotFiles as any[]).length === 0) {
       return
     }
 

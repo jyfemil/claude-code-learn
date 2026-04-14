@@ -1,30 +1,69 @@
-export const API_RESIZE_PARAMS: any = {}
+export type {
+  ComputerExecutor,
+  DisplayGeometry,
+  FrontmostApp,
+  InstalledApp,
+  ResolvePrepareCaptureResult,
+  RunningApp,
+  ScreenshotResult,
+} from "./executor.js";
 
-export class ComputerExecutor {}
+export type {
+  AppGrant,
+  CuAppPermTier,
+  ComputerUseHostAdapter,
+  ComputerUseOverrides,
+  ComputerUseSessionContext,
+  CoordinateMode,
+  CuGrantFlags,
+  CuPermissionRequest,
+  CuPermissionResponse,
+  CuSubGates,
+  CuTeachPermissionRequest,
+  Logger,
+  ResolvedAppRequest,
+  ScreenshotDims,
+  TeachStepRequest,
+  TeachStepResult,
+} from "./types.js";
 
-export type ComputerUseSessionContext = any
-export type CuCallToolResult = any
-export type CuPermissionRequest = any
-export type CuPermissionResponse = any
-export const DEFAULT_GRANT_FLAGS: any = {}
-export type DisplayGeometry = any
-export type FrontmostApp = any
-export type InstalledApp = any
-export type ResolvePrepareCaptureResult = any
-export type RunningApp = any
-export type ScreenshotDims = any
-export type ScreenshotResult = any
+export { DEFAULT_GRANT_FLAGS } from "./types.js";
 
-export function bindSessionContext(..._args: any[]): any {
-  return null
-}
+export {
+  SENTINEL_BUNDLE_IDS,
+  getSentinelCategory,
+} from "./sentinelApps.js";
+export type { SentinelCategory } from "./sentinelApps.js";
 
-export function buildComputerUseTools(..._args: any[]): any[] {
-  return []
-}
+export {
+  categoryToTier,
+  getDefaultTierForApp,
+  getDeniedCategory,
+  getDeniedCategoryByDisplayName,
+  getDeniedCategoryForApp,
+  isPolicyDenied,
+} from "./deniedApps.js";
+export type { DeniedCategory } from "./deniedApps.js";
 
-export function createComputerUseMcpServer(..._args: any[]): any {
-  return null
-}
+export { isSystemKeyCombo, normalizeKeySequence } from "./keyBlocklist.js";
 
-export const targetImageSize: any = null
+export { ALL_SUB_GATES_OFF, ALL_SUB_GATES_ON } from "./subGates.js";
+
+export { API_RESIZE_PARAMS, targetImageSize } from "./imageResize.js";
+export type { ResizeParams } from "./imageResize.js";
+
+export { defersLockAcquire, handleToolCall } from "./toolCalls.js";
+export type {
+  CuCallTelemetry,
+  CuCallToolResult,
+  CuErrorKind,
+} from "./toolCalls.js";
+
+export { bindSessionContext, createComputerUseMcpServer } from "./mcpServer.js";
+export { buildComputerUseTools } from "./tools.js";
+
+export {
+  comparePixelAtLocation,
+  validateClickTarget,
+} from "./pixelCompare.js";
+export type { CropRawPatchFn, PixelCompareResult } from "./pixelCompare.js";

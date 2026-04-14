@@ -21,7 +21,7 @@ import {
 import { accumulateUsage, updateUsage } from '../services/api/claude.js'
 import { EMPTY_USAGE, type NonNullableUsage } from '../services/api/logging.js'
 import type { ToolUseContext } from '../Tool.js'
-import type { AgentDefinition } from '../tools/AgentTool/loadAgentsDir.js'
+import type { AgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 import type { AgentId } from '../types/ids.js'
 import type { Message } from '../types/message.js'
 import { createChildAbortController } from './abortController.js'
@@ -558,10 +558,10 @@ export async function runForkedAgent({
       if (message.type === 'stream_event') {
         if (
           'event' in message &&
-          message.event?.type === 'message_delta' &&
-          message.event.usage
+          (message as any).event?.type === 'message_delta' &&
+          (message as any).event.usage
         ) {
-          const turnUsage = updateUsage({ ...EMPTY_USAGE }, message.event.usage)
+          const turnUsage = updateUsage({ ...EMPTY_USAGE }, (message as any).event.usage)
           totalUsage = accumulateUsage(totalUsage, turnUsage)
         }
         continue
