@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Engineering Deep Dives — 学习课件</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Playfair+Display:wght@400;700;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0b0f;
+    --bg-surface: #12131a;
+    --bg-card: #181922;
+    --bg-hover: #1e2030;
+    --border: #2a2d42;
+    --border-accent: #3d4166;
+    --text-primary: #e4e5f1;
+    --text-secondary: #8b8fb0;
+    --text-muted: #5c6080;
+    --accent-cyan: #56d4e8;
+    --accent-violet: #a78bfa;
+    --accent-amber: #f5c542;
+    --accent-rose: #f472b6;
+    --accent-emerald: #34d399;
+    --accent-blue: #60a5fa;
+    --gradient-hero: linear-gradient(135deg, #56d4e8 0%, #a78bfa 50%, #f472b6 100%);
+    --gradient-mcp: linear-gradient(135deg, #56d4e8 0%, #60a5fa 100%);
+    --gradient-trace: linear-gradient(135deg, #f5c542 0%, #f472b6 100%);
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(86, 212, 232, 0.25);
+    color: var(--accent-cyan);
+  }
+
+  /* ===== NOISE TEXTURE OVERLAY ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
+
+  /* ===== NAV ===== */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10, 11, 15, 0.85);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  nav .logo {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+  }
+
+  nav .nav-links {
+    display: flex;
+    gap: 0.25rem;
+    list-style: none;
+  }
+
+  nav .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  nav .nav-links a:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(86, 212, 232, 0.06) 0%, rgba(167, 139, 250, 0.03) 40%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -20%;
+    left: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(244, 114, 182, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-tag {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent-cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.2s forwards;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.4s forwards;
+  }
+
+  .hero h1 .gradient-text {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-desc {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    line-height: 1.8;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.6s forwards;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.8s forwards;
+  }
+
+  .hero-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .hero-meta-item .label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .hero-meta-item .value {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* ===== SECTION LAYOUT ===== */
+  .section {
+    padding: 6rem 2rem;
+    position: relative;
+  }
+
+  .section-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    margin-bottom: 4rem;
+  }
+
+  .section-number {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+  }
+
+  .section-number.mcp {
+    color: var(--accent-cyan);
+    background: rgba(86, 212, 232, 0.08);
+    border: 1px solid rgba(86, 212, 232, 0.15);
+  }
+
+  .section-number.trace {
+    color: var(--accent-amber);
+    background: rgba(245, 197, 66, 0.08);
+    border: 1px solid rgba(245, 197, 66, 0.15);
+  }
+
+  .section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-bottom: 1rem;
+  }
+
+  .section h2 .hl-cyan { color: var(--accent-cyan); }
+  .section h2 .hl-amber { color: var(--accent-amber); }
+  .section h2 .hl-violet { color: var(--accent-violet); }
+  .section h2 .hl-rose { color: var(--accent-rose); }
+
+  .section-desc {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 650px;
+    line-height: 1.8;
+  }
+
+  /* ===== SEPARATOR ===== */
+  .separator {
+    max-width: 900px;
+    margin: 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-accent), transparent);
+  }
+
+  /* ===== CONCEPT CARDS ===== */
+  .concept-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .concept-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.35s var(--ease-out-expo);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .concept-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+
+  .concept-card.mcp::before { background: var(--gradient-mcp); }
+  .concept-card.trace::before { background: var(--gradient-trace); }
+
+  .concept-card:hover {
+    border-color: var(--border-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .concept-card:hover::before { opacity: 1; }
+
+  .concept-card .card-number {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .concept-card h3 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+  }
+
+  .concept-card p {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.75;
+    margin-bottom: 0.75rem;
+  }
+
+  .concept-card p:last-child { margin-bottom: 0; }
+
+  /* ===== DIAGRAM BOXES ===== */
+  .diagram {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.9;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    white-space: pre;
+  }
+
+  .diagram .hl { color: var(--accent-cyan); font-weight: 600; }
+  .diagram .hl2 { color: var(--accent-violet); font-weight: 600; }
+  .diagram .hl3 { color: var(--accent-amber); font-weight: 600; }
+  .diagram .hl4 { color: var(--accent-rose); font-weight: 600; }
+  .diagram .dim { color: var(--text-muted); }
+  .diagram .em { color: var(--accent-emerald); font-weight: 500; }
+
+  /* ===== INSIGHT CALLOUT ===== */
+  .insight {
+    border-left: 3px solid;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.5rem 0;
+    font-size: 0.92rem;
+    line-height: 1.75;
+  }
+
+  .insight.cyan {
+    border-color: var(--accent-cyan);
+    background: rgba(86, 212, 232, 0.04);
+    color: var(--text-secondary);
+  }
+
+  .insight.amber {
+    border-color: var(--accent-amber);
+    background: rgba(245, 197, 66, 0.04);
+    color: var(--text-secondary);
+  }
+
+  .insight.violet {
+    border-color: var(--accent-violet);
+    background: rgba(167, 139, 250, 0.04);
+    color: var(--text-secondary);
+  }
+
+  .insight.rose {
+    border-color: var(--accent-rose);
+    background: rgba(244, 114, 182, 0.04);
+    color: var(--text-secondary);
+  }
+
+  .insight strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ===== TABLE ===== */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  thead {
+    background: var(--bg-surface);
+  }
+
+  th {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0.9rem 1.25rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid rgba(42, 45, 66, 0.5);
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(30, 32, 48, 0.4); }
+
+  td code {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--accent-cyan);
+    background: rgba(86, 212, 232, 0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+  }
+
+  /* ===== KEY POINTS GRID ===== */
+  .kp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .kp-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.3s;
+  }
+
+  .kp-item:hover { border-color: var(--border-accent); }
+
+  .kp-item .kp-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .kp-item h4 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .kp-item p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+
+  /* ===== TIMELINE ===== */
+  .timeline {
+    position: relative;
+    padding-left: 2.5rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent-amber), var(--accent-cyan));
+    border-radius: 1px;
+  }
+
+  .tl-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+  }
+
+  .tl-item:last-child { margin-bottom: 0; }
+
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -2.5rem;
+    top: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid;
+    background: var(--bg-deep);
+  }
+
+  .tl-item.trace::before { border-color: var(--accent-amber); }
+  .tl-item.mcp::before { border-color: var(--accent-cyan); }
+
+  .tl-item .tl-date {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+
+  .tl-item h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .tl-item p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-bar-wrap {
+    margin: 1rem 0;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .progress-track {
+    height: 6px;
+    background: var(--bg-surface);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1.5s var(--ease-out-expo);
+  }
+
+  .progress-fill.cyan { background: var(--gradient-mcp); }
+  .progress-fill.amber { background: var(--gradient-trace); }
+
+  /* ===== FOOTER ===== */
+  footer {
+    padding: 4rem 2rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  footer p {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 2;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    nav { padding: 0 1rem; gap: 1rem; }
+    .section { padding: 4rem 1.25rem; }
+    .concept-card { padding: 1.5rem; }
+    .diagram { font-size: 0.72rem; padding: 1rem 1.25rem; }
+    .hero { padding: 6rem 1.25rem 3rem; }
+    .hero-meta { gap: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav>
+  <div class="logo">DEEP DIVES</div>
+  <ul class="nav-links">
+    <li><a href="#mcp">MCP 协议</a></li>
+    <li><a href="#tracing">Agent Tracing</a></li>
+    <li><a href="#connections">融会贯通</a></li>
+  </ul>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">Claude Code Learn &mdash; 学习课件</div>
+    <h1>AI Engineering<br><span class="gradient-text">Deep Dives</span></h1>
+    <p class="hero-desc">
+      基于 Claude Code 逆向工程的两次深度学习记录。从 Agent 可观测性到 MCP 协议设计哲学，探索 AI 工程化的核心架构思想。
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <span class="label">Topics</span>
+        <span class="value">2 Deep Dives</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="label">Concepts</span>
+        <span class="value">17 Mastered</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="label">Method</span>
+        <span class="value">teach-me Skill</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="label">Period</span>
+        <span class="value">2026.04.14 — 04.27</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ============================================================ -->
+<!-- PART 1: MCP PROTOCOL                                         -->
+<!-- ============================================================ -->
+<section class="section" id="mcp">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-number mcp">Part 01 &mdash; 2026.04.27</span>
+      <h2>MCP 协议<br><span class="hl-cyan">设计哲学</span></h2>
+      <p class="section-desc">
+        Model Context Protocol 不只是又一个 API 标准。它是一套完整的 AI 工具生态协议，
+        其设计思想——Progressive Complexity——贯穿每一个架构层面。
+      </p>
+      <div class="progress-bar-wrap">
+        <div class="progress-label"><span>掌握进度</span><span>7 / 8 concepts</span></div>
+        <div class="progress-track"><div class="progress-fill cyan" style="width: 87.5%"></div></div>
+      </div>
+    </div>
+
+    <!-- Concept 1 -->
+    <div class="concept-grid">
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 01</div>
+        <h3>N&times;M 问题与协议定位</h3>
+        <p>
+          N 个 AI 应用 &times; M 个工具/数据源 = N&times;M 个集成。MCP 把这变成 N+M：
+          每个应用实现一次 client，每个工具实现一次 server。
+        </p>
+        <p>
+          但 MCP 不只是解决集成数量问题。它与 REST/OpenAPI 的根本区别在于<strong>交互模型</strong>：
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>维度</th><th>OpenAPI + REST</th><th>MCP</th></tr></thead>
+            <tbody>
+              <tr><td>连接</td><td>无状态，请求-响应</td><td>有状态长连接</td></tr>
+              <tr><td>能力发现</td><td>静态 spec 文件</td><td>运行时动态发现 + 变更通知</td></tr>
+              <tr><td>语义描述</td><td>给开发者看</td><td>给 LLM 理解和自主调用</td></tr>
+              <tr><td>方向</td><td>client → server 单向</td><td>双向（server 可 push 通知）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insight cyan">
+          <strong>核心洞察：</strong>有状态长连接的代价（资源占用、生命周期复杂度）在 AI 场景中是值得的——
+          一次会话中对同一个 server 会反复调用多次，维持连接的成本远小于每次重连。
+        </div>
+      </div>
+
+      <!-- Concept 2 -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 02</div>
+        <h3>三大原语：控制权谱系</h3>
+        <p>
+          MCP 定义了三种 server 可暴露的原语，它们的区分不是按功能，
+          而是按<strong>控制权</strong>分层——谁来决定使用它。
+        </p>
+        <div class="diagram"><span class="dim">控制权谱系：</span>
+
+  <span class="hl3">User-controlled</span>          <span class="hl2">Application-controlled</span>       <span class="hl">Model-controlled</span>
+  ┌──────────┐             ┌──────────────┐            ┌──────────┐
+  │ <span class="hl3">Prompts</span>  │             │  <span class="hl2">Resources</span>   │            │  <span class="hl">Tools</span>   │
+  │ 用户选模板 │             │ 应用注入上下文 │            │ LLM 自主  │
+  │ /slash 命令│             │ URI 寻址数据  │            │ 调用的函数 │
+  └──────────┘             └──────────────┘            └──────────┘</div>
+        <div class="kp-grid">
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F3AF;</div>
+            <h4>Tools — Model 主导</h4>
+            <p>LLM 看 description 后自主决定调用。通过 name + inputSchema 寻址。</p>
+          </div>
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F4C2;</div>
+            <h4>Resources — App 主导</h4>
+            <p>应用/用户选择注入上下文。通过 URI 寻址，如 <code>git://repo/main/file</code>。</p>
+          </div>
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F4DD;</div>
+            <h4>Prompts — User 主导</h4>
+            <p>用户选择模板，应用填参数。如 <code>/commit</code>、<code>/review</code>。</p>
+          </div>
+        </div>
+        <div class="insight violet">
+          <strong>边界案例：</strong>"读取文件" 可以同时是 Resource（<code>git://repo/file</code>，用户选择附加）
+          和 Tool（<code>read_file(path)</code>，LLM 自主调用）。MCP 两者都提供，因为消费者不同。
+        </div>
+      </div>
+
+      <!-- Concept 3 -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 03</div>
+        <h3>Capability Negotiation：显式契约</h3>
+        <p>
+          连接建立时，client 和 server 通过三步握手交换能力声明。
+          核心原则：<strong>Fail-fast at handshake, not at runtime</strong>。
+        </p>
+        <div class="diagram"><span class="hl">Client</span> → Server:  <span class="em">initialize</span>({ capabilities: { sampling: {}, roots: { listChanged: true } } })
+<span class="hl2">Server</span> → Client:  { capabilities: { <span class="hl">tools</span>: { listChanged: true }, <span class="hl2">resources</span>: {}, <span class="hl3">prompts</span>: {} } }
+<span class="hl">Client</span> → Server:  <span class="em">initialized</span> <span class="dim">// 通知，表示已准备好</span></div>
+        <p>
+          Capability negotiation 是声明式的、非强制的。Server 不能"要求"client 必须支持什么，
+          只能根据 client 声明的能力调整自己的行为——<strong>graceful degradation</strong>。
+        </p>
+      </div>
+
+      <!-- Concept 4 -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 04</div>
+        <h3>Transport 层抽象：按需复杂</h3>
+        <div class="diagram"><span class="dim">┌─────────────────────────┐</span>
+<span class="dim">│</span>  <span class="hl2">Protocol Layer</span>          <span class="dim">│</span>  JSON-RPC 消息、capability negotiation
+<span class="dim">├─────────────────────────┤</span>
+<span class="dim">│</span>  <span class="hl">Transport Layer</span>         <span class="dim">│</span>  stdio / HTTP SSE / Streamable HTTP
+<span class="dim">└─────────────────────────┘</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Transport</th><th>场景</th><th>特点</th></tr></thead>
+            <tbody>
+              <tr><td><code>stdio</code></td><td>本地进程</td><td>零网络开销，子进程 pipe 通信</td></tr>
+              <tr><td><code>HTTP SSE</code></td><td>远程（旧版）</td><td>SSE 长连接，需要维持状态</td></tr>
+              <tr><td><code>Streamable HTTP</code></td><td>远程（新版）</td><td>可选有/无状态，兼容 serverless</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insight cyan">
+          <strong>Progressive Complexity：</strong>Streamable HTTP 让 server 自己决定要不要有状态。
+          简单 server 返回 JSON（像 REST），复杂 server 升级为 SSE stream。
+          入门门槛低，天花板高。
+        </div>
+      </div>
+
+      <!-- Concept 5 -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 05</div>
+        <h3>生命周期与 JSON-RPC 2.0</h3>
+        <div class="diagram">  <span class="dim">Not Started</span> ──启动server进程──→ <span class="hl3">Initializing</span> ──握手完成──→ <span class="em">Running</span> ──close/error──→ <span class="hl4">Closed</span>
+                                                          <span class="dim">│         ↑</span>
+                                                 <span class="dim">tool/call, sampling,  │</span>
+                                                 <span class="dim">notifications         │</span>
+                                                          <span class="dim">└─────────┘</span></div>
+        <p>
+          在 Running 阶段，通信双向且异步。MCP 选择 JSON-RPC 2.0 因为它原生支持：
+        </p>
+        <div class="kp-grid">
+          <div class="kp-item">
+            <h4>Request / Response</h4>
+            <p>带 <code>id</code> 字段匹配，支持并发请求</p>
+          </div>
+          <div class="kp-item">
+            <h4>Notification</h4>
+            <p>无 <code>id</code>，如 <code>tools/list_changed</code>，不需要回复</p>
+          </div>
+          <div class="kp-item">
+            <h4>双向</h4>
+            <p>Client 和 server 都可以发 request 和 notification</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concept 6 -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 06</div>
+        <h3>安全边界：Server 被动原则</h3>
+        <p>
+          <strong>Server 是被动的、沙盒化的执行者，不是对话的参与者。</strong>
+        </p>
+        <div class="diagram">                        <span class="hl4">信任边界</span>
+                           <span class="hl4">│</span>
+  用户 ←→ Client ←→ LLM  <span class="hl4">║</span>  ←→ MCP Server
+        (Claude Code)     <span class="hl4">║</span>    (第三方工具)
+                           <span class="hl4">│</span>
+                           <span class="hl4">│</span> Server 看不到：
+                           <span class="hl4">│</span> <span class="dim">- 对话历史</span>
+                           <span class="hl4">│</span> <span class="dim">- 系统提示词</span>
+                           <span class="hl4">│</span> <span class="dim">- 其他 tool 的结果</span>
+                           <span class="hl4">│</span> <span class="dim">- 用户的个人信息</span></div>
+        <div class="insight rose">
+          <strong>未解难题：</strong>Tool 返回值最终进入 LLM prompt，恶意 server 可通过返回值做 prompt injection。
+          MCP 的贡献是把安全边界<strong>显式化</strong>——至少 client 知道哪些内容来自不可信源。
+        </div>
+      </div>
+
+      <!-- Concept 7: Sampling -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">BONUS</div>
+        <h3>Sampling：反向借用 LLM</h3>
+        <p>
+          Sampling 让 server 反过来请求 client 调用 LLM，而不需要自己管理 API key。
+        </p>
+        <div class="diagram"><span class="dim">正常:   </span> <span class="hl">Client</span> ──<span class="em">tool/call</span>──→ <span class="hl2">Server</span>
+<span class="dim">Sampling:</span> <span class="hl">Client</span> ←──<span class="hl3">sampling/createMessage</span>── <span class="hl2">Server</span>
+          <span class="hl">Client</span> ──<span class="em">result</span>──→ <span class="hl2">Server</span></div>
+        <p>
+          MCP 的独特之处：把"server 借用 client LLM" <strong>标准化为协议的一部分</strong>。
+          同一个 server 在 Claude Code 里能用 Claude，在 Cursor 里能用 GPT——server 代码不用改。
+        </p>
+      </div>
+
+      <!-- Concept 8: Claude Code 实现 -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">CONCEPT 08</div>
+        <h3>Claude Code 中的落地实现</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>协议概念</th><th>代码实现</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Capability Negotiation</td>
+                <td><code>client.ts</code> — 声明 <code>{ roots: {}, elicitation: {} }</code>，连接后读 <code>getServerCapabilities()</code></td>
+              </tr>
+              <tr>
+                <td>三大原语</td>
+                <td><code>fetchToolsForClient</code> + <code>fetchCommandsForClient</code> + <code>fetchResourcesForClient</code> 并行获取</td>
+              </tr>
+              <tr>
+                <td>Transport 解耦</td>
+                <td><code>connectToServer</code> 中 switch — stdio / SSE / Streamable HTTP / WebSocket / SDK</td>
+              </tr>
+              <tr>
+                <td>变更通知</td>
+                <td>订阅 <code>ToolListChangedNotificationSchema</code> 等三个 Schema</td>
+              </tr>
+              <tr>
+                <td>Tool 统一抽象</td>
+                <td>MCP tool 命名为 <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>，与内置 tool 同一注册表</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insight cyan">
+          <strong>精妙之处：</strong>内置 tools 按名称排序作为连续前缀，MCP tools 追加在后面。
+          新增/移除 MCP server 时，内置 tool 部分的 token 序列不变，prompt cache 依然命中。
+          <strong>协议的 N&times;M 解耦 → 实现层统一抽象 → 性能层缓存优化</strong>，三层一脉相承。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ============================================================ -->
+<!-- PART 2: AGENT TRACING & OBSERVABILITY                        -->
+<!-- ============================================================ -->
+<section class="section" id="tracing">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-number trace">Part 02 &mdash; 2026.04.14</span>
+      <h2>Agent Tracing &<br><span class="hl-amber">Observability</span></h2>
+      <p class="section-desc">
+        当 Agent 做出了错误决策，你怎么知道它为什么这么做？
+        传统日志无法回答这个问题——你需要一个专门的可观测性框架。
+      </p>
+      <div class="progress-bar-wrap">
+        <div class="progress-label"><span>掌握进度</span><span>9 / 10 concepts</span></div>
+        <div class="progress-track"><div class="progress-fill amber" style="width: 90%"></div></div>
+      </div>
+    </div>
+
+    <div class="concept-grid">
+
+      <!-- Core Model -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">CORE MODEL</div>
+        <h3>Agent 可观测性的三层模型</h3>
+        <p>
+          不同层面的问题需要不同的观测手段。三层模型把混乱的 Agent 调试变成结构化的分析框架。
+        </p>
+        <div class="diagram"><span class="hl3">Layer 3: Reasoning</span> <span class="dim">（推理层）</span>
+  <span class="dim">│</span> CoT 思维链、LLM 内部推理过程
+  <span class="dim">│</span> <span class="hl4">⚠ 不可靠 — LLM 解释是事后合理化，不是真实推理记录</span>
+  <span class="dim">│</span>
+<span class="hl2">Layer 2: Decisional</span> <span class="dim">（决策层）</span>  ← <span class="em">核心价值所在</span>
+  <span class="dim">│</span> 工具选择、continue/stop 判断、多 Agent 路由
+  <span class="dim">│</span> <span class="em">✓ 可靠 — 代码级事实，决策时状态快照</span>
+  <span class="dim">│</span>
+<span class="hl">Layer 1: Operational</span> <span class="dim">（运维层）</span>
+  <span class="dim">│</span> 延迟、token 消耗、错误率、API 调用计数
+  <span class="dim">│</span> <span class="dim">常规 APM 指标</span></div>
+        <div class="insight amber">
+          <strong>关键洞察：</strong>大多数人只做了 Layer 1（运维指标）和 Layer 3（看 CoT），
+          却跳过了最有价值的 Layer 2（决策层）。<strong>决策层是唯一基于代码级事实的观测层。</strong>
+        </div>
+      </div>
+
+      <!-- Decision Context -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">KEY INSIGHT</div>
+        <h3>decision_context：决策时状态快照</h3>
+        <p>
+          当 Agent 做出决策时，记录那一刻的完整状态——不是事后重建，而是<strong>决策发生时的快照</strong>。
+        </p>
+        <div class="diagram"><span class="hl3">AgentTraceRecord</span> {
+  timestamp: <span class="dim">"2026-04-14T10:23:45Z"</span>,
+  decision_type: <span class="hl">"tool_selection"</span>,
+  chosen: <span class="em">"FileReadTool"</span>,
+  <span class="hl4">rejected_options</span>: [<span class="dim">"GrepTool"</span>, <span class="dim">"BashTool"</span>],  <span class="dim">// ← 多数人忽略的高价值字段</span>
+  <span class="hl2">decision_context</span>: {
+    available_tools: [...],
+    recent_messages: [...],
+    current_file: <span class="dim">"src/query.ts"</span>,
+    token_budget_remaining: <span class="dim">42000</span>
+  }
+}</div>
+        <div class="kp-grid">
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F4F8;</div>
+            <h4>decision_context</h4>
+            <p>决策时的完整上下文快照。让你事后能完全还原"它当时看到了什么"。</p>
+          </div>
+          <div class="kp-item">
+            <div class="kp-icon">&#x274C;</div>
+            <h4>rejected_options</h4>
+            <p>被拒绝的选项同样重要。知道它"没选什么"往往比"选了什么"更有诊断价值。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cross-Agent Tracing -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">ADVANCED</div>
+        <h3>跨 Agent 追踪：input_sources</h3>
+        <p>
+          多 Agent 协作时，关键问题是：下游 Agent 的决策被上游哪个 Agent 的输出影响了？
+        </p>
+        <div class="diagram"><span class="hl3">Agent A</span> ──output──→ <span class="hl2">Router</span> ──route──→ <span class="hl">Agent B</span>
+                              <span class="dim">│</span>
+                      <span class="em">input_sources</span>: [
+                        { agent: <span class="hl3">"A"</span>, field: <span class="dim">"tool_result"</span>, span_id: <span class="dim">"abc123"</span> },
+                        { agent: <span class="hl2">"Router"</span>, field: <span class="dim">"routing_decision"</span>, span_id: <span class="dim">"def456"</span> }
+                      ]</div>
+        <p>
+          <code>input_sources</code> 记录每个决策的输入来自哪些 Agent 的哪些输出，
+          形成一张<strong>因果图</strong>，而不只是时间序列。
+        </p>
+      </div>
+
+      <!-- Trace Data Model -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">FOUNDATION</div>
+        <h3>Trace 数据模型</h3>
+        <p>基于 OpenTelemetry 的 span/trace 模型，但针对 Agent 场景做了扩展：</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>概念</th><th>Agent 场景含义</th><th>与传统 APM 的区别</th></tr></thead>
+            <tbody>
+              <tr><td><code>Trace</code></td><td>一次完整的用户请求处理</td><td>可能包含多轮 LLM 调用</td></tr>
+              <tr><td><code>Span</code></td><td>一个 Agent 动作（tool call、LLM 调用、路由决策）</td><td>需要记录 decision_context</td></tr>
+              <tr><td><code>Parent-Child</code></td><td>Agent → SubAgent 嵌套</td><td>更深层的嵌套和并发</td></tr>
+              <tr><td><code>Attributes</code></td><td>token 消耗、模型版本、决策类型</td><td>AI 特有的维度</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analysis Workflow -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">WORKFLOW</div>
+        <h3>分析工作流：统计 → Diff → 回溯</h3>
+        <p>
+          不是盲目翻日志，而是结构化的三步分析法：
+        </p>
+        <div class="kp-grid">
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F4CA;</div>
+            <h4>Step 1: 统计</h4>
+            <p>从宏观指标发现异常——成功率下降、延迟飙升、token 消耗异常增长</p>
+          </div>
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F50D;</div>
+            <h4>Step 2: Diff 分析</h4>
+            <p>对比正常 trace 和异常 trace 的 decision_context 差异，定位变化点</p>
+          </div>
+          <div class="kp-item">
+            <div class="kp-icon">&#x1F517;</div>
+            <h4>Step 3: 回溯</h4>
+            <p>通过 input_sources 追踪因果链，找到根因 Agent 和根因决策</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CoT Warning -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">CRITICAL</div>
+        <h3>CoT 的陷阱：事后合理化</h3>
+        <div class="insight rose">
+          <strong>LLM 的 Chain-of-Thought 不是推理日志，而是事后合理化。</strong>
+          它解释的是"我应该怎么想"，而不是"我实际怎么想的"。
+          用 CoT 做调试就像问犯错的人"你为什么犯错"——你得到的是自洽的叙事，不是真实原因。
+          <br><br>
+          正确做法：CoT 作为<strong>辅助参考</strong>，核心诊断依赖代码级的 decision_context。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ============================================================ -->
+<!-- PART 3: CONNECTIONS                                          -->
+<!-- ============================================================ -->
+<section class="section" id="connections">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-number" style="color: var(--accent-violet); background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.15);">融会贯通</span>
+      <h2>跨主题<br><span class="hl-violet">设计模式</span></h2>
+      <p class="section-desc">
+        两次深度学习之间的共通设计思想——从 MCP 协议到 Agent 可观测性，底层是同一套工程哲学。
+      </p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card reveal" style="border-color: var(--border-accent);">
+        <h3>共通模式一：显式优于隐式</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>MCP</th><th>Agent Tracing</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Capability negotiation 在连接时显式声明能力边界</td>
+                <td>decision_context 在决策时显式快照状态</td>
+              </tr>
+              <tr>
+                <td>安全边界显式化——client 知道哪些内容来自不可信源</td>
+                <td>input_sources 显式标注每个决策的输入来源</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insight violet">
+          <strong>原则：</strong>不要让系统在运行时"猜"——在尽可能早的阶段，把关键信息显式记录。
+          MCP 在握手时确定契约，Tracing 在决策时记录快照。
+        </div>
+      </div>
+
+      <div class="concept-card reveal" style="border-color: var(--border-accent);">
+        <h3>共通模式二：Progressive Complexity</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>MCP</th><th>Agent Tracing</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Transport: 简单 server 返回 JSON，复杂 server 升级 SSE</td>
+                <td>三层模型：先做 Layer 1（运维），按需加 Layer 2（决策），Layer 3 辅助</td>
+              </tr>
+              <tr>
+                <td>原语: server 可以只暴露 Tools，不必全部实现</td>
+                <td>可以只记 chosen，按需加 rejected_options 和 decision_context</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insight violet">
+          <strong>原则：</strong>入门门槛低，天花板高。不强制一步到位的复杂度，
+          让实现者根据自己的需求逐步增加精度。
+        </div>
+      </div>
+
+      <div class="concept-card reveal" style="border-color: var(--border-accent);">
+        <h3>共通模式三：Graceful Degradation</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>MCP</th><th>Agent Tracing</th><th>Claude Code Core</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Client 不支持 sampling → server 降级，不崩溃</td>
+                <td>CoT 不可靠 → 降级为辅助参考，依赖代码级事实</td>
+                <td>FallbackTriggeredError → 切换 fallbackModel</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insight violet">
+          <strong>原则：</strong>能力不足时降级，而不是崩溃。
+          这个模式在 MCP（capability negotiation）、Agent Tracing（三层模型）、
+          和 Claude Code 核心循环（query.ts 错误恢复）中反复出现。
+        </div>
+      </div>
+    </div>
+
+    <!-- Learning Timeline -->
+    <div style="margin-top: 4rem;" class="reveal">
+      <h3 style="margin-bottom: 2rem; font-family: var(--font-display); font-size: 1.5rem;">学习时间线</h3>
+      <div class="timeline">
+        <div class="tl-item trace">
+          <div class="tl-date">2026-04-14</div>
+          <h4>Agent Tracing & Observability</h4>
+          <p>9/10 concepts mastered in single session. Key insight: decision_context + input_sources + CoT as supplementary.</p>
+        </div>
+        <div class="tl-item mcp">
+          <div class="tl-date">2026-04-27</div>
+          <h4>MCP Protocol Design Philosophy</h4>
+          <p>7/8 concepts mastered (1 skipped). Key insight: progressive complexity + control-spectrum primitives + unified tool abstraction.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <p>
+    Claude Code Learn &mdash; AI Engineering Deep Dives<br>
+    Built with /teach-me skill &middot; Powered by Claude<br>
+    <span style="color: var(--accent-cyan);">2026</span>
+  </p>
+</footer>
+
+<!-- ===== SCROLL REVEAL ===== -->
+<script>
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    }),
+    { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+  );
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
