@@ -590,6 +590,51 @@
   .progress-fill.cyan { background: var(--gradient-mcp); }
   .progress-fill.amber { background: var(--gradient-trace); }
 
+  /* ===== CODE BLOCK ===== */
+  .code-block {
+    background: #0d0e14;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 1.25rem 0;
+    overflow: hidden;
+  }
+
+  .code-block .code-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: rgba(42, 45, 66, 0.3);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  .code-block .code-header .file-icon {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .code-block pre {
+    padding: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.75;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  .code-block pre .kw { color: var(--accent-violet); font-weight: 500; }
+  .code-block pre .fn { color: var(--accent-cyan); }
+  .code-block pre .str { color: var(--accent-emerald); }
+  .code-block pre .cmt { color: var(--text-muted); font-style: italic; }
+  .code-block pre .type { color: var(--accent-amber); }
+  .code-block pre .hl { color: var(--accent-rose); font-weight: 600; }
+  .code-block pre .num { color: var(--accent-blue); }
+
   /* ===== FOOTER ===== */
   footer {
     padding: 4rem 2rem;
@@ -720,6 +765,23 @@
           <strong>核心洞察：</strong>有状态长连接的代价（资源占用、生命周期复杂度）在 AI 场景中是值得的——
           一次会话中对同一个 server 会反复调用多次，维持连接的成本远小于每次重连。
         </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/mcp/types.ts — MCP Server 配置定义</div>
+<pre><span class="cmt">// 三种配置类型对应三种 transport，用 Zod schema 验证</span>
+<span class="kw">const</span> McpStdioServerConfigSchema = z.<span class="fn">object</span>({
+  type: z.<span class="fn">literal</span>(<span class="str">'stdio'</span>).<span class="fn">optional</span>(),   <span class="cmt">// 本地进程，默认模式</span>
+  command: z.<span class="fn">string</span>().<span class="fn">min</span>(<span class="num">1</span>),             <span class="cmt">// 如 "npx", "uvx", "node"</span>
+  args: z.<span class="fn">array</span>(z.<span class="fn">string</span>()).<span class="fn">default</span>([]),
+  env: z.<span class="fn">record</span>(z.<span class="fn">string</span>(), z.<span class="fn">string</span>()).<span class="fn">optional</span>(),
+})
+
+<span class="kw">const</span> McpHTTPServerConfigSchema = z.<span class="fn">object</span>({
+  type: z.<span class="fn">literal</span>(<span class="str">'http'</span>),               <span class="cmt">// Streamable HTTP — 现代远程模式</span>
+  url: z.<span class="fn">string</span>(),
+  headers: z.<span class="fn">record</span>(z.<span class="fn">string</span>(), z.<span class="fn">string</span>()).<span class="fn">optional</span>(),
+  oauth: McpOAuthConfigSchema().<span class="fn">optional</span>(),
+})</pre>
+        </div>
       </div>
 
       <!-- Concept 2 -->
@@ -776,6 +838,28 @@
           Capability negotiation 是声明式的、非强制的。Server 不能"要求"client 必须支持什么，
           只能根据 client 声明的能力调整自己的行为——<strong>graceful degradation</strong>。
         </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/mcp/client.ts:986 — Client 声明自身能力</div>
+<pre><span class="kw">const</span> client = <span class="kw">new</span> <span class="type">Client</span>(
+  { name: <span class="str">'claude-code'</span>, title: <span class="str">'Claude Code'</span>, version: MACRO.VERSION },
+  {
+    capabilities: {
+      <span class="hl">roots</span>: {},         <span class="cmt">// 声明支持：server 可以查询 client 的工作目录</span>
+      <span class="hl">elicitation</span>: {},   <span class="cmt">// 声明支持：server 可以向用户提问</span>
+      <span class="cmt">// 注意：没有声明 sampling — Claude Code 目前不支持 server 反向调 LLM</span>
+    },
+  },
+)</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/mcp/client.ts:1158 — 连接后读取 server 能力</div>
+<pre><span class="kw">const</span> capabilities = client.<span class="fn">getServerCapabilities</span>()
+<span class="fn">logMCPDebug</span>(name, <span class="str">`Connection established with capabilities: ${</span><span class="fn">jsonStringify</span>({
+  hasTools:     <span class="hl">!!capabilities?.tools</span>,      <span class="cmt">// server 有没有工具？</span>
+  hasPrompts:   !!capabilities?.prompts,    <span class="cmt">// server 有没有提示词模板？</span>
+  hasResources: !!capabilities?.resources,  <span class="cmt">// server 有没有资源？</span>
+})<span class="str">}`</span>)</pre>
+        </div>
       </div>
 
       <!-- Concept 4 -->
@@ -801,6 +885,23 @@
           <strong>Progressive Complexity：</strong>Streamable HTTP 让 server 自己决定要不要有状态。
           简单 server 返回 JSON（像 REST），复杂 server 升级为 SSE stream。
           入门门槛低，天花板高。
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/mcp/client.ts — connectToServer() transport 分支</div>
+<pre><span class="cmt">// 同一个 connectToServer 函数，根据配置类型选择 transport</span>
+<span class="kw">if</span> (serverRef.type === <span class="str">'sse'</span>) {
+  transport = <span class="kw">new</span> <span class="type">SSEClientTransport</span>(url, transportOptions)
+} <span class="kw">else if</span> (serverRef.type === <span class="str">'http'</span>) {
+  transport = <span class="kw">new</span> <span class="type">StreamableHTTPClientTransport</span>(url, transportOptions)
+} <span class="kw">else if</span> (serverRef.type === <span class="str">'stdio'</span> || !serverRef.type) {
+  transport = <span class="kw">new</span> <span class="type">StdioClientTransport</span>({
+    command: finalCommand,             <span class="cmt">// 如 "npx"</span>
+    args: finalArgs,                   <span class="cmt">// 如 ["-y", "@modelcontextprotocol/server-github"]</span>
+    env: { ...<span class="fn">subprocessEnv</span>(), ...stdioRef.env },
+    stderr: <span class="str">'pipe'</span>,                   <span class="cmt">// stderr 用于 server 日志</span>
+  })
+}
+<span class="cmt">// 从此以后，上层代码只看到 client.request() — 完全不关心底层 transport</span></pre>
         </div>
       </div>
 
@@ -829,6 +930,23 @@
             <h4>双向</h4>
             <p>Client 和 server 都可以发 request 和 notification</p>
           </div>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/mcp/useManageMCPConnections.ts:618 — 变更通知订阅</div>
+<pre><span class="cmt">// 只有当 server 在握手中声明了 listChanged 时才订阅通知</span>
+<span class="kw">if</span> (client.capabilities?.tools?.<span class="hl">listChanged</span>) {
+  client.client.<span class="fn">setNotificationHandler</span>(
+    <span class="type">ToolListChangedNotificationSchema</span>,
+    <span class="kw">async</span> () => {
+      <span class="fn">fetchToolsForClient</span>.cache.<span class="fn">delete</span>(client.name)  <span class="cmt">// 清除缓存</span>
+      <span class="kw">const</span> newTools = <span class="kw">await</span> <span class="fn">fetchToolsForClient</span>(client)  <span class="cmt">// 重新拉取</span>
+      <span class="fn">updateServer</span>({ ...client, tools: newTools })  <span class="cmt">// 更新状态</span>
+    },
+  )
+}
+<span class="cmt">// Prompts 和 Resources 同理 — 三种原语各自独立订阅</span>
+<span class="kw">if</span> (client.capabilities?.prompts?.<span class="hl">listChanged</span>) { <span class="cmt">/* ... */</span> }
+<span class="kw">if</span> (client.capabilities?.resources?.<span class="hl">listChanged</span>) { <span class="cmt">/* ... */</span> }</pre>
         </div>
       </div>
 
@@ -907,6 +1025,41 @@
           新增/移除 MCP server 时，内置 tool 部分的 token 序列不变，prompt cache 依然命中。
           <strong>协议的 N&times;M 解耦 → 实现层统一抽象 → 性能层缓存优化</strong>，三层一脉相承。
         </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/mcp/client.ts:1744 — Tool 发现：从 MCP server 获取工具</div>
+<pre><span class="kw">export const</span> fetchToolsForClient = <span class="fn">memoizeWithLRU</span>(
+  <span class="kw">async</span> (client: <span class="type">MCPServerConnection</span>): <span class="type">Promise&lt;Tool[]&gt;</span> => {
+    <span class="kw">if</span> (!client.capabilities?.tools) <span class="kw">return</span> []  <span class="cmt">// capability 检查！</span>
+
+    <span class="kw">const</span> result = <span class="kw">await</span> client.client.<span class="fn">request</span>(
+      { method: <span class="str">'tools/list'</span> },  <span class="cmt">// JSON-RPC 请求</span>
+      <span class="type">ListToolsResultSchema</span>,
+    )
+    <span class="kw">return</span> result.tools.<span class="fn">map</span>((tool): <span class="type">Tool</span> => ({
+      ...<span class="type">MCPTool</span>,
+      name: <span class="fn">buildMcpToolName</span>(client.name, tool.name), <span class="cmt">// → mcp__jira__search_issues</span>
+      mcpInfo: { serverName: client.name, toolName: tool.name },
+      inputJSONSchema: tool.inputSchema,
+    }))
+  }
+)</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/tools.ts:348 — Tool 合并：内置 tools 作为连续前缀</div>
+<pre><span class="kw">export function</span> <span class="fn">assembleToolPool</span>(permissionContext, mcpTools): <span class="type">Tools</span> {
+  <span class="kw">const</span> builtInTools = <span class="fn">getTools</span>(permissionContext)
+  <span class="kw">const</span> allowedMcpTools = <span class="fn">filterToolsByDenyRules</span>(mcpTools, permissionContext)
+
+  <span class="cmt">// 内置 tools 排序后作为连续前缀 → prompt cache 友好</span>
+  <span class="cmt">// MCP tools 追加在后面 → 增删 MCP server 不破坏缓存</span>
+  <span class="cmt">// uniqBy 保留第一个 → 内置 tool 名称优先于 MCP tool</span>
+  <span class="kw">const</span> byName = (a, b) => a.name.<span class="fn">localeCompare</span>(b.name)
+  <span class="kw">return</span> <span class="fn">uniqBy</span>(
+    [...builtInTools].<span class="fn">sort</span>(byName).<span class="fn">concat</span>(allowedMcpTools.<span class="fn">sort</span>(byName)),
+    <span class="str">'name'</span>,
+  )
+}</pre>
+        </div>
       </div>
     </div>
   </div>
@@ -956,6 +1109,27 @@
           <strong>关键洞察：</strong>大多数人只做了 Layer 1（运维指标）和 Layer 3（看 CoT），
           却跳过了最有价值的 Layer 2（决策层）。<strong>决策层是唯一基于代码级事实的观测层。</strong>
         </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/query.ts:601 — Layer 2 实例：StreamingToolExecutor 并行执行</div>
+<pre><span class="cmt">// 在 API 流式返回时，并行启动工具执行 — 不等完整响应</span>
+<span class="kw">let</span> streamingToolExecutor = useStreamingToolExecution
+  ? <span class="kw">new</span> <span class="type">StreamingToolExecutor</span>(
+      toolUseContext.options.tools,
+      canUseTool,       <span class="cmt">// 权限检查函数</span>
+      toolUseContext,
+    )
+  : <span class="kw">null</span>
+
+<span class="cmt">// 流式接收中：每拿到一个 tool_use block 就立即投递</span>
+<span class="kw">for</span> (<span class="kw">const</span> toolBlock <span class="kw">of</span> msgToolUseBlocks) {
+  streamingToolExecutor.<span class="fn">addTool</span>(toolBlock, assistantMessage)
+}
+
+<span class="cmt">// 同时收割已完成的结果 — 不阻塞流式接收</span>
+<span class="kw">for</span> (<span class="kw">const</span> result <span class="kw">of</span> streamingToolExecutor.<span class="fn">getCompletedResults</span>()) {
+  <span class="kw">yield</span> result.message  <span class="cmt">// 通过 AsyncGenerator 实时推给上层</span>
+}</pre>
+        </div>
       </div>
 
       <!-- Decision Context -->
@@ -988,6 +1162,23 @@
             <h4>rejected_options</h4>
             <p>被拒绝的选项同样重要。知道它"没选什么"往往比"选了什么"更有诊断价值。</p>
           </div>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/Tool.ts:763 — buildTool：fail-closed 默认值就是 decision_context 的基石</div>
+<pre><span class="kw">const</span> <span class="type">TOOL_DEFAULTS</span> = {
+  isEnabled: () => <span class="kw">true</span>,
+  <span class="hl">isConcurrencySafe</span>: () => <span class="kw">false</span>,  <span class="cmt">// 未知工具默认不并发安全</span>
+  <span class="hl">isReadOnly</span>: () => <span class="kw">false</span>,          <span class="cmt">// 未知工具默认有写操作</span>
+  <span class="hl">isDestructive</span>: () => <span class="kw">false</span>,      <span class="cmt">// ← 保守但不过度：不标记为破坏性</span>
+  checkPermissions: (input, _ctx) =>
+    <span class="type">Promise</span>.<span class="fn">resolve</span>({ behavior: <span class="str">'allow'</span>, updatedInput: input }),
+}
+
+<span class="kw">export function</span> <span class="fn">buildTool</span>&lt;D&gt;(def: D): <span class="type">BuiltTool&lt;D&gt;</span> {
+  <span class="kw">return</span> { ...<span class="type">TOOL_DEFAULTS</span>, userFacingName: () => def.name, ...def }
+}
+<span class="cmt">// 每个 Tool 的这些属性就是它的 decision_context —</span>
+<span class="cmt">// Agent 选择工具时，这些元数据决定了"能不能并发""要不要请求权限"</span></pre>
         </div>
       </div>
 
@@ -1064,6 +1255,40 @@
           用 CoT 做调试就像问犯错的人"你为什么犯错"——你得到的是自洽的叙事，不是真实原因。
           <br><br>
           正确做法：CoT 作为<strong>辅助参考</strong>，核心诊断依赖代码级的 decision_context。
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/query.ts:831 — Withheld Messages：代码级事实 vs 表面现象</div>
+<pre><span class="cmt">// 流式接收中：某些错误被"暂扣"而非立即抛出</span>
+<span class="kw">let</span> withheld = <span class="kw">false</span>
+<span class="kw">if</span> (reactiveCompact?.<span class="fn">isWithheldPromptTooLong</span>(message)) {
+  withheld = <span class="kw">true</span>   <span class="cmt">// prompt 太长 → 先不告诉用户，尝试压缩恢复</span>
+}
+<span class="kw">if</span> (<span class="fn">isWithheldMaxOutputTokens</span>(message)) {
+  withheld = <span class="kw">true</span>   <span class="cmt">// 输出超限 → 先不告诉用户，尝试升级 token 限额</span>
+}
+<span class="kw">if</span> (!withheld) {
+  <span class="kw">yield</span> yieldMessage  <span class="cmt">// 正常消息直接推送</span>
+}
+<span class="cmt">// 恢复成功 → 暂扣的错误被吞掉，用户完全无感</span>
+<span class="cmt">// 恢复失败 → 才把暂扣的错误 yield 出来</span>
+<span class="cmt">// 这就是为什么看 CoT 可能误导：表面上"一切正常"，实际内部经历了错误恢复</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/query.ts:937 — FallbackTriggeredError：模型降级也是隐藏的决策</div>
+<pre><span class="kw">} catch</span> (innerError) {
+  <span class="kw">if</span> (innerError <span class="kw">instanceof</span> <span class="type">FallbackTriggeredError</span> && fallbackModel) {
+    currentModel = <span class="hl">fallbackModel</span>  <span class="cmt">// 切换到备选模型</span>
+    attemptWithFallback = <span class="kw">true</span>
+    <span class="cmt">// 清空本轮所有中间状态，用新模型重新开始</span>
+    assistantMessages.length = <span class="num">0</span>
+    toolResults.length = <span class="num">0</span>
+    <span class="kw">yield</span> <span class="fn">createSystemMessage</span>(
+      <span class="str">`Switched to ${<span class="fn">renderModelName</span>(innerError.fallbackModel)} ...`</span>,
+      <span class="str">'warning'</span>,
+    )
+    <span class="kw">continue</span>  <span class="cmt">// 回到 while(true) 主循环</span>
+  }
+}</pre>
         </div>
       </div>
 
@@ -1151,6 +1376,22 @@
           <strong>原则：</strong>能力不足时降级，而不是崩溃。
           这个模式在 MCP（capability negotiation）、Agent Tracing（三层模型）、
           和 Claude Code 核心循环（query.ts 错误恢复）中反复出现。
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/QueryEngine.ts:439 — 早写入 Transcript：kill-mid-request 恢复</div>
+<pre><span class="cmt">// 在 API 响应前就写入 transcript — 如果进程被杀，至少用户消息已保存</span>
+<span class="cmt">// 这让 --resume 能从用户最后发送的消息处恢复</span>
+<span class="kw">if</span> (persistSession && messagesFromUserInput.length > <span class="num">0</span>) {
+  <span class="kw">const</span> transcriptPromise = <span class="fn">recordTranscript</span>(messages)
+  <span class="kw">if</span> (<span class="fn">isBareMode</span>()) {
+    <span class="kw">void</span> transcriptPromise         <span class="cmt">// fire-and-forget（bare 模式不阻塞）</span>
+  } <span class="kw">else</span> {
+    <span class="kw">await</span> transcriptPromise        <span class="cmt">// ~4ms on SSD，可接受的延迟</span>
+    <span class="kw">await</span> <span class="fn">flushSessionStorage</span>()   <span class="cmt">// 确保写入磁盘</span>
+  }
+}
+<span class="cmt">// 设计原则：先持久化再执行，而不是执行完再持久化</span>
+<span class="cmt">// 这是 Graceful Degradation 的另一个维度：对进程崩溃也做降级处理</span></pre>
         </div>
       </div>
     </div>
