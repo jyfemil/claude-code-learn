@@ -685,6 +685,7 @@
   <ul class="nav-links">
     <li><a href="#mcp">MCP 协议</a></li>
     <li><a href="#tracing">Agent Tracing</a></li>
+    <li><a href="#patterns">精妙设计</a></li>
     <li><a href="#connections">融会贯通</a></li>
   </ul>
 </nav>
@@ -1299,7 +1300,304 @@
 <div class="separator"></div>
 
 <!-- ============================================================ -->
-<!-- PART 3: CONNECTIONS                                          -->
+<!-- PART 3: MORE ARCHITECTURAL INSIGHTS                           -->
+<!-- ============================================================ -->
+<section class="section" id="patterns">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-number" style="color: var(--accent-emerald); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.15);">Part 03 &mdash; 架构深挖</span>
+      <h2>更多<span class="hl-cyan">精妙</span>设计</h2>
+      <p class="section-desc">
+        从核心循环到启动优化，Claude Code 中隐藏着大量精心设计的架构决策。
+        每一个都值得细品。
+      </p>
+    </div>
+
+    <div class="concept-grid">
+
+      <!-- Pattern 1: Prompt Cache -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">INSIGHT 01</div>
+        <h3>Prompt Cache 精准放置：只标一个点</h3>
+        <p>
+          Anthropic 的 prompt caching 需要在消息上放 <code>cache_control</code> 标记。
+          Claude Code 的策略是<strong>永远只放一个标记</strong>——放在消息列表的最后一条上。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/api/claude.ts:3142 — 精准一个缓存标记</div>
+<pre><span class="cmt">// 两个标记会导致 KV 缓存服务器的页驱逐策略浪费空间</span>
+<span class="cmt">// 所以永远只放一个标记，放在最后一条消息上</span>
+<span class="kw">const</span> markerIndex = skipCacheWrite
+  ? messages.length - <span class="num">2</span>   <span class="cmt">// 子 agent fire-and-forget：标记往前移一位</span>
+  : messages.length - <span class="num">1</span>   <span class="cmt">// 正常：标记最后一条</span>
+
+<span class="kw">const</span> result = messages.<span class="fn">map</span>((msg, index) => {
+  <span class="kw">const</span> addCache = index === markerIndex
+  <span class="cmt">// 只有这一条消息会带 cache_control: { type: 'ephemeral' }</span>
+})</pre>
+        </div>
+        <div class="insight cyan">
+          <strong>为什么精妙：</strong>系统提示 + 历史消息 = 前缀不变，最后一条消息 = 新增内容。
+          在前缀上打标记意味着每轮对话都能命中缓存前缀。子 agent 的 <code>skipCacheWrite</code>
+          巧妙地避免了污染主对话的缓存——不需要额外的代码路径。
+        </div>
+      </div>
+
+      <!-- Pattern 2: 529 Escalation -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">INSIGHT 02</div>
+        <h3>三层重试阶梯：529 错误的精确处理</h3>
+        <p>
+          API 过载（529）时，Claude Code 不是简单地"重试 N 次然后失败"，
+          而是用<strong>三层阶梯</strong>做精确的升级控制。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/api/withRetry.ts:318 — 三层升级策略</div>
+<pre><span class="cmt">// Tier 1: 后台任务 → 立即放弃，避免雪崩放大</span>
+<span class="kw">if</span> (<span class="fn">is529Error</span>(error) && !<span class="fn">shouldRetry529</span>(options.querySource)) {
+  <span class="kw">throw new</span> <span class="type">CannotRetryError</span>(error, retryContext)
+}
+
+<span class="cmt">// Tier 2: 前台任务 → 重试最多 3 次</span>
+consecutive529Errors++
+<span class="kw">if</span> (consecutive529Errors >= <span class="hl">MAX_529_RETRIES</span>) {
+  <span class="cmt">// Tier 3: 重试耗尽 → 触发模型降级</span>
+  <span class="kw">if</span> (options.fallbackModel) {
+    <span class="kw">throw new</span> <span class="type">FallbackTriggeredError</span>(options.model, options.fallbackModel)
+  }
+  <span class="kw">throw new</span> <span class="type">CannotRetryError</span>(<span class="kw">new</span> Error(<span class="str">REPEATED_529_ERROR_MESSAGE</span>))
+}</pre>
+        </div>
+        <div class="insight amber">
+          <strong>为什么精妙：</strong>三种 Error 类型（<code>CannotRetryError</code>、
+          <code>FallbackTriggeredError</code>、普通 Error）让上层可以精准捕获并区分处理。
+          后台任务不重试是为了防止 N 个子 agent 同时重试导致网关雪崩。
+        </div>
+      </div>
+
+      <!-- Pattern 3: State Object -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">INSIGHT 03</div>
+        <h3>State 对象模式：不可变的循环状态</h3>
+        <p>
+          <code>queryLoop()</code> 的 <code>while(true)</code> 主循环不用多个 <code>let</code> 变量，
+          而是用一个<strong>不可变 State 对象</strong>在每次迭代间传递。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/query.ts:207 — State 类型定义</div>
+<pre><span class="kw">type</span> <span class="type">State</span> = {
+  messages: <span class="type">Message</span>[]
+  toolUseContext: <span class="type">ToolUseContext</span>
+  autoCompactTracking: <span class="type">AutoCompactTrackingState</span> | <span class="kw">undefined</span>
+  <span class="hl">transition</span>: <span class="type">Continue</span> | <span class="kw">undefined</span>  <span class="cmt">// 为什么上一轮继续了？</span>
+}
+
+<span class="cmt">// 每次 continue 都是一个完整的 State 替换，不是局部 mutation</span>
+state = {
+  ...fields,
+  transition: { reason: <span class="str">'collapse_drain_retry'</span>, committed: drained.committed }
+}
+<span class="kw">continue</span></pre>
+        </div>
+        <div class="insight cyan">
+          <strong>为什么精妙：</strong>9 个 <code>let</code> 变量的部分更新极易出现状态不一致 bug。
+          原子替换保证每次循环看到的是<strong>完整一致的状态</strong>。
+          <code>transition</code> 字段同时充当审计日志——零额外代码就记录了"为什么继续循环"。
+        </div>
+      </div>
+
+      <!-- Pattern 4: yield* Pipeline -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">INSIGHT 04</div>
+        <h3>yield* 透明管道：零开销的事件流</h3>
+        <p>
+          整个查询循环通过 <code>yield*</code> 委托形成一条<strong>透明管道</strong>，
+          事件从最深层直接流到调用者。
+        </p>
+        <div class="diagram"><span class="dim">调用链：</span>
+<span class="hl">REPL</span> → <span class="kw">for await</span> (<span class="kw">const</span> msg <span class="kw">of</span> <span class="fn">query</span>(...)) { ... }
+               <span class="dim">│</span>
+           <span class="fn">query</span>() = <span class="kw">yield*</span> <span class="fn">queryLoop</span>(...)     <span class="cmt">// 完全委托</span>
+                         <span class="dim">│</span>
+                    <span class="kw">yield*</span> <span class="fn">yieldMissingToolResultBlocks</span>(...)  <span class="cmt">// 子生成器</span>
+                    <span class="kw">yield</span> assistantMessage                       <span class="cmt">// 单条事件</span></div>
+        <div class="insight amber">
+          <strong>为什么精妙：</strong>对比回调/EventEmitter/Promise 方案——<code>yield*</code>
+          不需要注册监听器、不需要缓冲区、错误自然沿生成器栈向上传播、
+          调用者一个 <code>.return()</code> 就能关闭整条链。
+          零中间层开销，代码读起来就像同步调用。
+        </div>
+      </div>
+
+      <!-- Pattern 5: Permission 4-layer -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">INSIGHT 05</div>
+        <h3>权限四层守卫：纵深防御</h3>
+        <p>
+          每次工具调用都要经过四层检查，每层都会短路——到达用户确认的已经是最小子集。
+        </p>
+        <div class="diagram"><span class="hl4">Layer 1: Static Deny</span>  → 配置规则直接拒绝        → <span class="hl4">deny</span>
+        <span class="dim">│ pass</span>
+<span class="hl3">Layer 2: Static Ask</span>   → 配置规则要求用户确认     → <span class="hl3">ask</span>
+        <span class="dim">│ pass</span>
+<span class="hl2">Layer 3: Zod + Tool</span>  → 参数验证 + tool.checkPermissions() → <span class="hl2">deny/ask</span>
+        <span class="dim">│ pass</span>
+<span class="em">Layer 4: Allow</span>       → 全部通过                 → <span class="em">execute</span></div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/utils/permissions/permissions.ts:1169 — 四层短路</div>
+<pre><span class="cmt">// Layer 1: 静态拒绝规则（settings.json 中配置）</span>
+<span class="kw">const</span> denyRule = <span class="fn">getDenyRuleForTool</span>(...)
+<span class="kw">if</span> (denyRule) <span class="kw">return</span> { behavior: <span class="str">'deny'</span> }  <span class="cmt">// 短路！</span>
+
+<span class="cmt">// Layer 2: 静态询问规则</span>
+<span class="kw">const</span> askRule = <span class="fn">getAskRuleForTool</span>(...)
+<span class="kw">if</span> (askRule) <span class="kw">return</span> { behavior: <span class="str">'ask'</span> }    <span class="cmt">// 短路！</span>
+
+<span class="cmt">// Layer 3: Zod 参数校验 + 工具自身权限逻辑</span>
+<span class="kw">const</span> parsedInput = tool.inputSchema.<span class="fn">parse</span>(input)
+toolPermissionResult = <span class="kw">await</span> tool.<span class="fn">checkPermissions</span>(parsedInput, context)
+<span class="kw">if</span> (toolPermissionResult?.behavior === <span class="str">'deny'</span>) <span class="kw">return</span> toolPermissionResult
+
+<span class="cmt">// Layer 4: 全部通过 → allow</span></pre>
+        </div>
+      </div>
+
+      <!-- Pattern 6: Message Collapse Pipeline -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">INSIGHT 06</div>
+        <h3>消息折叠管道：纯函数组合</h3>
+        <p>
+          终端 UI 中的消息列表需要做大量后处理：分组、折叠、隐藏通知。
+          Claude Code 用<strong>函数管道</strong>实现，而不是一个巨型处理函数。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/components/Messages.tsx:640 — 可组合的折叠管道</div>
+<pre><span class="kw">const</span> collapsed = <span class="fn">collapseBackgroundBashNotifications</span>(
+  <span class="fn">collapseHookSummaries</span>(
+    <span class="fn">collapseTeammateShutdowns</span>(
+      <span class="fn">collapseReadSearchGroups</span>(
+        <span class="fn">applyGrouping</span>(
+          <span class="fn">reorderMessagesInUI</span>(messagesToShow),
+          tools, verbose
+        ),
+        tools
+      )
+    )
+  ),
+  verbose
+)</pre>
+        </div>
+        <div class="insight amber">
+          <strong>为什么精妙：</strong>每个函数只做一件事（单一职责），
+          输入输出类型相同（<code>Message[] → Message[]</code>）所以可以自由组合。
+          新增折叠规则只需要写一个新函数并插入管道——零耦合。
+          每个函数可以独立测试。
+        </div>
+      </div>
+
+      <!-- Pattern 7: ToolSearch -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">INSIGHT 07</div>
+        <h3>ToolSearch 延迟加载：对 API 隐藏工具</h3>
+        <p>
+          当你有 10 个 MCP server、每个有 20 个工具时，200 个 tool 定义会占用大量 token。
+          Claude Code 的解决方案：<strong>只有被"发现"的工具才发送给 API</strong>。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/services/api/claude.ts:1176 — 延迟发现机制</div>
+<pre><span class="kw">const</span> discoveredToolNames = <span class="fn">extractDiscoveredToolNames</span>(messages)
+
+filteredTools = tools.<span class="fn">filter</span>(tool => {
+  <span class="kw">if</span> (!deferredToolNames.<span class="fn">has</span>(tool.name)) <span class="kw">return true</span>  <span class="cmt">// 非延迟工具直接通过</span>
+  <span class="kw">if</span> (<span class="fn">toolMatchesName</span>(tool, <span class="hl">TOOL_SEARCH_TOOL_NAME</span>)) <span class="kw">return true</span>  <span class="cmt">// 搜索器本身永远可用</span>
+  <span class="kw">return</span> discoveredToolNames.<span class="fn">has</span>(tool.name)  <span class="cmt">// 只有被发现的才发送</span>
+})</pre>
+        </div>
+        <div class="insight cyan">
+          <strong>为什么精妙：</strong>LLM 只看到 ToolSearch 这一个入口工具。需要时它搜索"我需要搜索 Jira"，
+          ToolSearch 返回 <code>mcp__jira__search_issues</code> 的描述，下一轮该工具才出现在可用列表中。
+          Token 消耗从 O(全部工具) 降到 O(实际使用的工具)。
+        </div>
+      </div>
+
+      <!-- Pattern 8: Startup Optimization -->
+      <div class="concept-card trace reveal">
+        <div class="card-number">INSIGHT 08</div>
+        <h3>启动瀑布式优化：并行预取 + 级联导入</h3>
+        <p>
+          Claude Code 的启动路径精心编排了<strong>两层优化</strong>：
+          side-effect import 并行预取，和级联 dynamic import 延迟加载。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/main.tsx:1 — 并行预取：利用 import 间隙做 I/O</div>
+<pre><span class="cmt">// 在模块求值的间隙，启动耗时 I/O 子进程</span>
+<span class="kw">import</span> { profileCheckpoint } <span class="kw">from</span> <span class="str">"./utils/startupProfiler.js"</span>
+<span class="fn">profileCheckpoint</span>(<span class="str">"main_tsx_entry"</span>)
+
+<span class="kw">import</span> { startMdmRawRead } <span class="kw">from</span> <span class="str">"./utils/settings/mdm/rawRead.js"</span>
+<span class="fn">startMdmRawRead</span>()  <span class="cmt">// 启动 MDM 子进程 — 与后续 import 并行</span>
+
+<span class="kw">import</span> { startKeychainPrefetch } <span class="kw">from</span> <span class="str">"./utils/secureStorage/keychainPrefetch.js"</span>
+<span class="fn">startKeychainPrefetch</span>()  <span class="cmt">// 启动 macOS 钥匙串读取 — 与后续 import 并行</span>
+<span class="cmt">// 接下来还有 ~135ms 的 import 语句，子进程已在并行运行</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/entrypoints/cli.tsx:89 — 级联 dynamic import：重模块最后加载</div>
+<pre><span class="cmt">// 每个快速路径只 import 自己需要的窄模块</span>
+<span class="kw">if</span> (args[<span class="num">0</span>] === <span class="str">'--version'</span>) { <span class="fn">process.stdout.write</span>(version); <span class="fn">process.exit</span>(<span class="num">0</span>) }
+<span class="kw">if</span> (args[<span class="num">0</span>] === <span class="str">'--daemon-worker'</span>) { <span class="kw">await import</span>(<span class="str">'../daemon/main.js'</span>); ... }
+<span class="kw">if</span> (args[<span class="num">0</span>] === <span class="str">'mcp'</span>) { <span class="kw">await import</span>(<span class="str">'./mcp.js'</span>); ... }
+
+<span class="cmt">// 完整 UI（React 渲染树）是最后才 import 的 — 非交互模式永远不加载它</span>
+<span class="kw">const</span> { main: cliMain } = <span class="kw">await import</span>(<span class="str">'../main.jsx'</span>)
+<span class="kw">await</span> <span class="fn">cliMain</span>()</pre>
+        </div>
+        <div class="insight amber">
+          <strong>为什么精妙：</strong>两层优化叠加——<code>main.tsx</code> 中的 side-effect import
+          让子进程 I/O 与模块加载重叠；<code>cli.tsx</code> 中的级联 <code>await import()</code>
+          确保 <code>--version</code> 只加载 1 个模块就退出，而完整 UI 只在交互模式才加载。
+          <code>profileCheckpoint</code> 插在关键位置，让启动性能可观测。
+        </div>
+      </div>
+
+      <!-- Pattern 9: Feature Flag Dual Gating -->
+      <div class="concept-card mcp reveal">
+        <div class="card-number">INSIGHT 09</div>
+        <h3>Feature Flag 双重门控：编译时 + 运行时</h3>
+        <p>
+          工具注册使用<strong>两种不同的门控机制</strong>，精确控制哪些工具进入产物、哪些在运行时激活。
+        </p>
+        <div class="code-block">
+          <div class="code-header"><span class="file-icon">&#9670;</span> src/tools.ts:16 — 两种门控并存</div>
+<pre><span class="cmt">// 门控 A: feature() — 编译时 DCE，未启用的工具不进入 bundle</span>
+<span class="kw">const</span> SleepTool = <span class="fn">feature</span>(<span class="str">'PROACTIVE'</span>) || <span class="fn">feature</span>(<span class="str">'KAIROS'</span>)
+  ? <span class="fn">require</span>(<span class="str">'./tools/SleepTool/SleepTool.js'</span>).SleepTool
+  : <span class="kw">null</span>
+
+<span class="cmt">// 门控 B: process.env — 运行时判断，工具在 bundle 中但按环境激活</span>
+<span class="kw">const</span> REPLTool = process.env.<span class="hl">USER_TYPE</span> === <span class="str">'ant'</span>
+  ? <span class="fn">require</span>(<span class="str">'./tools/REPLTool/REPLTool.js'</span>).REPLTool
+  : <span class="kw">null</span>
+
+<span class="cmt">// feature() → Bun 编译器理解语义，false 分支整个 tree-shake 掉</span>
+<span class="cmt">// process.env → 同一个 bundle，不同环境激活不同工具集</span></pre>
+        </div>
+        <div class="insight cyan">
+          <strong>为什么精妙：</strong>实验性功能（SleepTool）用 <code>feature()</code> 门控，
+          bundle 完全不包含它的代码——零运行时开销。内部工具（REPLTool）用环境变量门控，
+          同一个 bundle 可以给内部员工和外部用户使用——部署一次，按环境分化。
+          两种机制互补，覆盖了不同的门控需求。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ============================================================ -->
+<!-- PART 4: CONNECTIONS                                          -->
 <!-- ============================================================ -->
 <section class="section" id="connections">
   <div class="section-inner">
