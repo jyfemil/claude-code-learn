@@ -876,31 +876,33 @@ function cycleNode(id, el) {
 
 function cycleChild(cid, pid, el) {
   state[cid] = cycle(state[cid]||0);
+  const prevParent = state[pid]||0;
   deriveParent(pid);
+  const newParent = state[pid]||0;
   render();
   if (state[cid] === S_DONE) {
     const newEl = document.querySelector(`.child[data-id="${cid}"]`);
     if (newEl) triggerSmallFirework(newEl);
   }
+  // If parent just became DONE via all children completing, fire big firework
+  if (newParent === S_DONE && prevParent !== S_DONE) {
+    const parentEl = document.querySelector(`.node-card[data-id="${pid}"]`);
+    if (parentEl) setTimeout(()=>triggerBigFirework(parentEl), 300);
+  }
 }
 
 function deriveParent(pid) {
-  let allDone=true, anyLearn=false;
+  let allDone = true, anyActive = false;
   DATA.phases.forEach(p=>p.nodes.forEach(n=>{
     if(n.id===pid) n.children.forEach(c=>{
-      const s=state[c.id]||0;
-      if(s!==S_DONE) allDone=false;
-      if(s===S_LEARN) anyLearn=true;
+      const s = state[c.id]||0;
+      if(s !== S_DONE) allDone = false;
+      if(s > S_NONE) anyActive = true;
     });
   }));
-  if(allDone) state[pid]=S_DONE;
-  else if(anyLearn||Object.values(state).some((v,k)=>false)) { // any child learning or some done
-    let anyActive = false;
-    DATA.phases.forEach(p=>p.nodes.forEach(n=>{
-      if(n.id===pid) n.children.forEach(c=>{if((state[c.id]||0)>0) anyActive=true;});
-    }));
-    state[pid] = anyActive ? S_LEARN : S_NONE;
-  } else state[pid]=S_NONE;
+  if(allDone) state[pid] = S_DONE;
+  else if(anyActive) state[pid] = S_LEARN;
+  else state[pid] = S_NONE;
 }
 
 // ===== EDIT MODE =====
