@@ -57,7 +57,6 @@ body::before {
   z-index: 0;
 }
 
-/* Grid background */
 body::after {
   content: '';
   position: fixed;
@@ -180,6 +179,16 @@ body::after {
   border-color: rgba(0,230,118,0.5);
 }
 
+.btn-collapse {
+  border-color: rgba(179,136,255,0.3);
+  color: var(--glow-violet);
+}
+
+.btn-collapse:hover {
+  background: rgba(179,136,255,0.08);
+  border-color: rgba(179,136,255,0.5);
+}
+
 /* ===== LEGEND ===== */
 .legend {
   display: flex;
@@ -217,7 +226,7 @@ body::after {
 .graph-container {
   position: relative;
   z-index: 1;
-  padding: 3rem 2rem 4rem;
+  padding: 3rem 2rem 6rem;
   overflow-x: auto;
   min-height: calc(100vh - 120px);
 }
@@ -326,8 +335,9 @@ body::after {
   max-width: 220px;
   text-align: center;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: default;
+  cursor: pointer;
   overflow: hidden;
+  user-select: none;
 }
 
 .node-card::before {
@@ -368,14 +378,69 @@ body::after {
   transition: color 0.4s;
 }
 
-/* ===== CHILDREN ROW ===== */
+/* ===== EXPAND/COLLAPSE TOGGLE ===== */
+.node-toggle {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 5;
+  font-family: var(--font-mono);
+}
+
+.node-toggle:hover {
+  border-color: var(--border-active);
+  color: var(--text-secondary);
+  background: var(--bg-card-hover);
+  transform: translateX(-50%) scale(1.1);
+}
+
+.node-toggle .toggle-icon {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-block;
+  line-height: 1;
+}
+
+.node-toggle.collapsed .toggle-icon {
+  transform: rotate(-90deg);
+}
+
+/* ===== CHILDREN CONTAINER ===== */
+.children-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+  opacity: 1;
+}
+
+.children-wrapper.collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.children-inner {
+  overflow: hidden;
+}
+
 .children {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: center;
   max-width: 240px;
-  padding-top: 0.5rem;
+  padding-top: 1rem;
 }
 
 .child-node {
@@ -390,6 +455,7 @@ body::after {
   cursor: default;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  user-select: none;
 }
 
 /* ===== EDIT MODE ===== */
@@ -444,7 +510,6 @@ body.edit-mode .child-node:hover {
   color: var(--text-secondary);
 }
 
-/* Mastered child node */
 .child-node.mastered {
   background: rgba(0,230,118,0.08);
   border-color: rgba(0,230,118,0.3);
@@ -477,7 +542,15 @@ body.edit-mode .child-node:hover {
 }
 .node-card.mastered.phase3-glow .node-title { color: var(--glow-amber); text-shadow: 0 0 20px rgba(255,171,64,0.4); }
 
-/* ===== IGNITE ANIMATION ===== */
+.node-card.mastered.mastered-glow {
+  box-shadow: 0 0 25px rgba(0,230,118,0.12), 0 0 60px rgba(0,230,118,0.05);
+}
+.node-card.mastered.mastered-glow::before {
+  background: linear-gradient(135deg, var(--glow-emerald), rgba(0,229,255,0.3), rgba(179,136,255,0.2));
+}
+.node-card.mastered.mastered-glow .node-title { color: var(--glow-emerald); text-shadow: 0 0 20px rgba(0,230,118,0.4); }
+
+/* ===== ANIMATIONS ===== */
 @keyframes ignite {
   0% { transform: scale(1); }
   15% { transform: scale(1.06); }
@@ -513,7 +586,6 @@ body.edit-mode .child-node:hover {
   animation: glowPulse 4s ease-in-out infinite;
 }
 
-/* Particle container */
 .particles {
   position: absolute;
   inset: 0;
@@ -618,6 +690,7 @@ body.edit-mode .child-node:hover {
     <div class="stats-badge">
       Mastered: <span class="count" id="masteredCount">0</span> / <span id="totalCount">0</span>
     </div>
+    <button class="btn btn-collapse" id="collapseBtn" onclick="toggleAllCollapse()">Collapse All</button>
     <button class="btn btn-edit" id="editBtn" onclick="toggleEditMode()">Edit Mode</button>
     <button class="btn btn-save" id="saveBtn" onclick="saveState()">Save</button>
   </div>
@@ -629,6 +702,7 @@ body.edit-mode .child-node:hover {
   <div class="legend-item"><div class="legend-dot phase1"></div>Phase 1 核心机制</div>
   <div class="legend-item"><div class="legend-dot phase2"></div>Phase 2 智能层</div>
   <div class="legend-item"><div class="legend-dot phase3"></div>Phase 3 生产强化</div>
+  <div class="legend-item" style="margin-left:auto; color:var(--text-muted);">点击节点展开/收缩子节点</div>
 </div>
 
 <div class="graph-container">
@@ -685,38 +759,6 @@ const knowledgeData = {
             { id: "trace-input", label: "input_sources", mastered: true },
             { id: "trace-workflow", label: "分析工作流", mastered: true },
             { id: "trace-cot", label: "CoT 陷阱", mastered: true }
-          ]
-        },
-        {
-          id: "arch-patterns",
-          icon: "🏗️",
-          title: "架构精妙设计",
-          desc: "9 个深度洞察",
-          phase: "mastered",
-          mastered: true,
-          children: [
-            { id: "arch-cache", label: "Prompt Cache", mastered: true },
-            { id: "arch-retry", label: "三层重试", mastered: true },
-            { id: "arch-state", label: "State 对象模式", mastered: true },
-            { id: "arch-yield", label: "yield* 管道", mastered: true },
-            { id: "arch-perm", label: "权限四层守卫", mastered: true },
-            { id: "arch-fold", label: "消息折叠", mastered: true },
-            { id: "arch-toolsearch", label: "ToolSearch 延迟", mastered: true },
-            { id: "arch-boot", label: "启动优化", mastered: true },
-            { id: "arch-ff", label: "Feature Flag", mastered: true }
-          ]
-        },
-        {
-          id: "cross-patterns",
-          icon: "🔗",
-          title: "跨主题模式",
-          desc: "设计哲学贯通",
-          phase: "mastered",
-          mastered: true,
-          children: [
-            { id: "cross-explicit", label: "显式优于隐式", mastered: true },
-            { id: "cross-progressive", label: "Progressive Complexity", mastered: true },
-            { id: "cross-graceful", label: "Graceful Degradation", mastered: true }
           ]
         }
       ]
@@ -924,13 +966,16 @@ const knowledgeData = {
 
 // ===== STATE MANAGEMENT =====
 let state = {};
+let collapsed = {};
 let editMode = false;
 
 function loadState() {
   try {
-    const saved = localStorage.getItem('knowledge-graph-state');
+    const saved = localStorage.getItem('knowledge-graph-state-v2');
     if (saved) {
-      state = JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      state = parsed.mastery || {};
+      collapsed = parsed.collapsed || {};
     } else {
       initStateFromData();
     }
@@ -941,9 +986,11 @@ function loadState() {
 
 function initStateFromData() {
   state = {};
+  collapsed = {};
   knowledgeData.phases.forEach(phase => {
     phase.nodes.forEach(node => {
       state[node.id] = node.mastered;
+      collapsed[node.id] = false;
       node.children.forEach(child => {
         state[child.id] = child.mastered;
       });
@@ -952,26 +999,9 @@ function initStateFromData() {
 }
 
 function saveState() {
-  localStorage.setItem('knowledge-graph-state', JSON.stringify(state));
-  showToast('Progress saved successfully');
-
-  // Also try to save to file via companion server
-  saveToFile();
-}
-
-async function saveToFile() {
-  try {
-    const response = await fetch('/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ state, timestamp: new Date().toISOString() })
-    });
-    if (response.ok) {
-      showToast('Saved to disk ✓');
-    }
-  } catch (e) {
-    // Companion server not running, localStorage is fine
-  }
+  const payload = { mastery: state, collapsed, timestamp: new Date().toISOString() };
+  localStorage.setItem('knowledge-graph-state-v2', JSON.stringify(payload));
+  showToast('Progress saved');
 }
 
 // ===== RENDERING =====
@@ -1019,18 +1049,50 @@ function renderTree() {
       if (isMastered) cardClass += ` mastered ${node.phase}-glow`;
       cardEl.className = cardClass;
       cardEl.dataset.id = node.id;
-      cardEl.onclick = () => handleNodeClick(node.id, node.phase);
+
+      const isCollapsed = collapsed[node.id];
+      const childCount = node.children.length;
+      const masteredChildCount = node.children.filter(c => state[c.id]).length;
+      const badge = `${masteredChildCount}/${childCount}`;
 
       cardEl.innerHTML = `
         <div class="particles"></div>
         <div class="node-icon">${node.icon}</div>
         <div class="node-title">${node.title}</div>
         <div class="node-desc">${node.desc}</div>
+        <div class="node-toggle ${isCollapsed ? 'collapsed' : ''}" data-node="${node.id}">
+          <span class="toggle-icon">▼</span>
+        </div>
       `;
+
+      // Click card to toggle collapse (non-edit mode) or mastery (edit mode)
+      cardEl.addEventListener('click', (e) => {
+        if (e.target.closest('.node-toggle')) return;
+        if (editMode) {
+          handleNodeMastery(node.id, node.phase);
+        } else {
+          toggleCollapse(node.id);
+        }
+      });
+
+      // Toggle button
+      const toggleBtn = cardEl.querySelector('.node-toggle');
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCollapse(node.id);
+      });
+
       branchEl.appendChild(cardEl);
 
-      // Children
+      // Children wrapper (collapsible)
       if (node.children && node.children.length > 0) {
+        const wrapperEl = document.createElement('div');
+        wrapperEl.className = `children-wrapper${isCollapsed ? ' collapsed' : ''}`;
+        wrapperEl.dataset.parent = node.id;
+
+        const innerEl = document.createElement('div');
+        innerEl.className = 'children-inner';
+
         const childrenEl = document.createElement('div');
         childrenEl.className = 'children';
 
@@ -1042,11 +1104,16 @@ function renderTree() {
           childEl.textContent = child.label;
           childEl.dataset.id = child.id;
           childEl.dataset.parent = node.id;
-          childEl.onclick = (e) => { e.stopPropagation(); handleChildClick(child.id, node.id, node.phase); };
+          childEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (editMode) handleChildMastery(child.id, node.id, node.phase);
+          });
           childrenEl.appendChild(childEl);
         });
 
-        branchEl.appendChild(childrenEl);
+        innerEl.appendChild(childrenEl);
+        wrapperEl.appendChild(innerEl);
+        branchEl.appendChild(wrapperEl);
       }
 
       nodesRow.appendChild(branchEl);
@@ -1059,13 +1126,32 @@ function renderTree() {
   updateStats();
 }
 
-// ===== INTERACTIONS =====
-function handleNodeClick(nodeId, phase) {
-  if (!editMode) return;
+// ===== COLLAPSE/EXPAND =====
+function toggleCollapse(nodeId) {
+  collapsed[nodeId] = !collapsed[nodeId];
+  const wrapper = document.querySelector(`.children-wrapper[data-parent="${nodeId}"]`);
+  const toggle = document.querySelector(`.node-toggle[data-node="${nodeId}"]`);
+  if (wrapper) wrapper.classList.toggle('collapsed', collapsed[nodeId]);
+  if (toggle) toggle.classList.toggle('collapsed', collapsed[nodeId]);
+}
 
+function toggleAllCollapse() {
+  const allCollapsed = Object.values(collapsed).every(v => v);
+  const newState = !allCollapsed;
+  knowledgeData.phases.forEach(phase => {
+    phase.nodes.forEach(node => {
+      collapsed[node.id] = newState;
+    });
+  });
+  renderTree();
+  const btn = document.getElementById('collapseBtn');
+  btn.textContent = newState ? 'Expand All' : 'Collapse All';
+}
+
+// ===== MASTERY INTERACTIONS =====
+function handleNodeMastery(nodeId, phase) {
   state[nodeId] = !state[nodeId];
 
-  // If mastering parent, also master all children
   if (state[nodeId]) {
     knowledgeData.phases.forEach(p => {
       p.nodes.forEach(n => {
@@ -1083,12 +1169,9 @@ function handleNodeClick(nodeId, phase) {
   }
 }
 
-function handleChildClick(childId, parentId, phase) {
-  if (!editMode) return;
-
+function handleChildMastery(childId, parentId, phase) {
   state[childId] = !state[childId];
 
-  // Check if all children mastered → master parent
   let allChildrenMastered = true;
   knowledgeData.phases.forEach(p => {
     p.nodes.forEach(n => {
@@ -1103,7 +1186,6 @@ function handleChildClick(childId, parentId, phase) {
   if (allChildrenMastered) {
     state[parentId] = true;
   } else if (!state[childId]) {
-    // If unchecking a child, unmaster parent
     state[parentId] = false;
   }
 
@@ -1114,6 +1196,7 @@ function handleChildClick(childId, parentId, phase) {
   }
 }
 
+// ===== PARTICLES =====
 function emitParticles(nodeId) {
   const card = document.querySelector(`.node-card[data-id="${nodeId}"]`);
   if (!card) return;
