@@ -605,11 +605,12 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 class Rocket {
-  constructor(x, startY, targetY, color, size) {
+  constructor(x, startY, targetY, headColor, size) {
     this.x = x; this.y = startY;
     this.targetY = targetY;
     this.vy = size === 'big' ? -(7 + Math.random()*4) : -(5 + Math.random()*3);
-    this.color = color;
+    this.headColor = headColor;
+    this.explosionType = size === 'big' ? 'rainbow' : 'green';
     this.size = size || 'small';
     this.trail = [];
     this.alive = true;
@@ -622,7 +623,7 @@ class Rocket {
     this.vy *= 0.97;
     if (this.y <= this.targetY || this.vy > -2) {
       this.alive = false;
-      explode(this.x, this.y, this.color, this.size);
+      explode(this.x, this.y, this.explosionType, this.size);
     }
   }
   draw() {
@@ -634,7 +635,7 @@ class Rocket {
     });
     ctx.beginPath();
     ctx.arc(this.x, this.y, 3, 0, Math.PI*2);
-    ctx.fillStyle = this.color;
+    ctx.fillStyle = this.headColor;
     ctx.fill();
   }
 }
@@ -708,7 +709,8 @@ function launchSmallFirework(originEl) {
     const rx = x + (Math.random()-0.5) * 30;
     const targetY = startY - 80 - Math.random() * 60;
     setTimeout(() => {
-      rockets.push(new Rocket(rx, startY, targetY, 'green', 'small'));
+      rockets.push(new Rocket(rx, startY, targetY, '#10b981', 'small'));
+      ensureAnimating();
     }, i * 100);
   }
 }
@@ -718,25 +720,30 @@ function launchBigFirework(originEl) {
   const x = rect.left + rect.width/2;
   const startY = rect.top + rect.height/2;
 
-  // 5-6 rockets, spread wider, fly higher, rainbow colors
   const count = 5 + Math.floor(Math.random()*2);
   for (let i = 0; i < count; i++) {
     const rx = x + (Math.random()-0.5) * 120;
     const targetY = startY - 150 - Math.random() * 150;
     setTimeout(() => {
-      rockets.push(new Rocket(rx, startY, targetY, 'rainbow', 'big'));
+      const headColors = ['#10b981','#f59e0b','#3b82f6','#ec4899','#a855f7'];
+      rockets.push(new Rocket(rx, startY, targetY, headColors[i%headColors.length], 'big'));
+      ensureAnimating();
     }, i * 80);
   }
 }
 
+function ensureAnimating() {
+  if (!animating) { animating = true; animate(); }
+}
+
 function triggerSmallFirework(el) {
   launchSmallFirework(el);
-  if (!animating) { animating = true; animate(); }
+  ensureAnimating();
 }
 
 function triggerBigFirework(el) {
   launchBigFirework(el);
-  if (!animating) { animating = true; animate(); }
+  ensureAnimating();
 }
 
 // ===== RENDER =====
@@ -849,15 +856,15 @@ function toggleAllCollapse() {
 
 // ===== STATE CYCLING =====
 function cycleNode(id, el) {
-  const nv = cycle(state[id]||0);
+  const cur = state[id]||0;
+  const nv = cycle(cur);
   state[id] = nv;
   DATA.phases.forEach(p=>p.nodes.forEach(n=>{
     if(n.id===id) {
       if (nv === S_LEARN) {
-        // Learning: only mark first child as learning, leave others unchanged
-        if (n.children.length > 0 && (state[n.children[0].id]||0) === S_NONE) {
-          state[n.children[0].id] = S_LEARN;
-        }
+        // Learning: set first unlearned child to learning
+        const firstUnlearned = n.children.find(c=>(state[c.id]||0)===S_NONE);
+        if (firstUnlearned) state[firstUnlearned.id] = S_LEARN;
       } else if (nv === S_DONE) {
         // Done: mark all children as done
         n.children.forEach(c=>{state[c.id]=S_DONE;});
@@ -868,6 +875,7 @@ function cycleNode(id, el) {
     }
   }));
   render();
+  // Only big firework when completing
   if (nv === S_DONE) {
     const newEl = document.querySelector(`.node-card[data-id="${id}"]`);
     if (newEl) triggerBigFirework(newEl);
@@ -875,19 +883,22 @@ function cycleNode(id, el) {
 }
 
 function cycleChild(cid, pid, el) {
-  state[cid] = cycle(state[cid]||0);
+  const cur = state[cid]||0;
+  const nv = cycle(cur);
+  state[cid] = nv;
   const prevParent = state[pid]||0;
   deriveParent(pid);
   const newParent = state[pid]||0;
   render();
-  if (state[cid] === S_DONE) {
+  // Only small firework when child completes
+  if (nv === S_DONE) {
     const newEl = document.querySelector(`.child[data-id="${cid}"]`);
     if (newEl) triggerSmallFirework(newEl);
   }
-  // If parent just became DONE via all children completing, fire big firework
+  // Big firework when parent auto-completes
   if (newParent === S_DONE && prevParent !== S_DONE) {
     const parentEl = document.querySelector(`.node-card[data-id="${pid}"]`);
-    if (parentEl) setTimeout(()=>triggerBigFirework(parentEl), 300);
+    if (parentEl) setTimeout(()=>triggerBigFirework(parentEl), 400);
   }
 }
 
