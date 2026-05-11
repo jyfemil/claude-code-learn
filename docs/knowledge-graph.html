@@ -605,11 +605,12 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 class Rocket {
-  constructor(x, startY, targetY, color) {
+  constructor(x, startY, targetY, color, size) {
     this.x = x; this.y = startY;
     this.targetY = targetY;
-    this.vy = -(6 + Math.random()*3);
+    this.vy = size === 'big' ? -(7 + Math.random()*4) : -(5 + Math.random()*3);
     this.color = color;
+    this.size = size || 'small';
     this.trail = [];
     this.alive = true;
   }
@@ -621,7 +622,7 @@ class Rocket {
     this.vy *= 0.97;
     if (this.y <= this.targetY || this.vy > -2) {
       this.alive = false;
-      explode(this.x, this.y, this.color);
+      explode(this.x, this.y, this.color, this.size);
     }
   }
   draw() {
@@ -672,28 +673,18 @@ class Particle {
   }
 }
 
-function explode(x, y, baseColor) {
+function explode(x, y, baseColor, size) {
+  const isSmall = size === 'small';
   const colors = baseColor === 'gold'
     ? ['#f59e0b','#fbbf24','#f97316','#fcd34d','#ffffff']
+    : baseColor === 'rainbow'
+    ? ['#10b981','#f59e0b','#3b82f6','#ec4899','#a855f7','#ffffff','#fbbf24','#34d399']
     : ['#10b981','#34d399','#6ee7b7','#a7f3d0','#ffffff'];
-  for (let i = 0; i < 50; i++) {
-    particles.push(new Particle(x, y, colors[Math.floor(Math.random()*colors.length)]));
-  }
-}
-
-function launchFirework(originEl, stateVal) {
-  const rect = originEl.getBoundingClientRect();
-  const x = rect.left + rect.width/2;
-  const startY = rect.top + rect.height/2;
-  const colorName = stateVal === S_DONE ? 'green' : 'gold';
-
-  const count = 2 + Math.floor(Math.random()*2);
+  const count = isSmall ? 30 : 80;
   for (let i = 0; i < count; i++) {
-    const rx = x + (Math.random()-0.5) * 40;
-    const targetY = startY - 100 - Math.random() * 100;
-    setTimeout(() => {
-      rockets.push(new Rocket(rx, startY, targetY, colorName));
-    }, i * 100);
+    const p = new Particle(x, y, colors[Math.floor(Math.random()*colors.length)]);
+    if (!isSmall) { p.size *= 1.5; p.decay *= 0.6; }
+    particles.push(p);
   }
 }
 
@@ -702,15 +693,49 @@ function animate() {
   if (rockets.length === 0 && particles.length === 0) { animating = false; ctx.clearRect(0,0,canvas.width,canvas.height); return; }
   animating = true;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   rockets = rockets.filter(r => { r.update(); r.draw(); return r.alive; });
   particles = particles.filter(p => { p.update(); p.draw(); return p.alpha > 0.01; });
-
   requestAnimationFrame(animate);
 }
 
-function triggerFirework(el, stateVal) {
-  launchFirework(el, stateVal);
+function launchSmallFirework(originEl) {
+  const rect = originEl.getBoundingClientRect();
+  const x = rect.left + rect.width/2;
+  const startY = rect.top + rect.height/2;
+
+  const count = 2;
+  for (let i = 0; i < count; i++) {
+    const rx = x + (Math.random()-0.5) * 30;
+    const targetY = startY - 80 - Math.random() * 60;
+    setTimeout(() => {
+      rockets.push(new Rocket(rx, startY, targetY, 'green', 'small'));
+    }, i * 100);
+  }
+}
+
+function launchBigFirework(originEl) {
+  const rect = originEl.getBoundingClientRect();
+  const x = rect.left + rect.width/2;
+  const startY = rect.top + rect.height/2;
+
+  // 5-6 rockets, spread wider, fly higher, rainbow colors
+  const count = 5 + Math.floor(Math.random()*2);
+  for (let i = 0; i < count; i++) {
+    const rx = x + (Math.random()-0.5) * 120;
+    const targetY = startY - 150 - Math.random() * 150;
+    setTimeout(() => {
+      rockets.push(new Rocket(rx, startY, targetY, 'rainbow', 'big'));
+    }, i * 80);
+  }
+}
+
+function triggerSmallFirework(el) {
+  launchSmallFirework(el);
+  if (!animating) { animating = true; animate(); }
+}
+
+function triggerBigFirework(el) {
+  launchBigFirework(el);
   if (!animating) { animating = true; animate(); }
 }
 
@@ -843,9 +868,9 @@ function cycleNode(id, el) {
     }
   }));
   render();
-  if (nv > 0) {
+  if (nv === S_DONE) {
     const newEl = document.querySelector(`.node-card[data-id="${id}"]`);
-    if (newEl) triggerFirework(newEl, nv);
+    if (newEl) triggerBigFirework(newEl);
   }
 }
 
@@ -853,9 +878,9 @@ function cycleChild(cid, pid, el) {
   state[cid] = cycle(state[cid]||0);
   deriveParent(pid);
   render();
-  if (state[cid] > 0) {
+  if (state[cid] === S_DONE) {
     const newEl = document.querySelector(`.child[data-id="${cid}"]`);
-    if (newEl) triggerFirework(newEl, state[cid]);
+    if (newEl) triggerSmallFirework(newEl);
   }
 }
 
