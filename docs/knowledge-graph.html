@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Engineering — Knowledge Graph</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg-void: #06070b;
+  --bg-surface: #0c0e14;
+  --bg-card: #11131c;
+  --bg-card-hover: #161a26;
+  --border-dim: #1a1e2e;
+  --border-active: #2a3050;
+  --text-primary: #e8eaf0;
+  --text-secondary: #7a819e;
+  --text-muted: #3e4460;
+  --node-unlearned: #1c2030;
+  --node-unlearned-border: #252a3c;
+  --node-unlearned-text: #4a5070;
+  --glow-cyan: #00e5ff;
+  --glow-violet: #b388ff;
+  --glow-amber: #ffab40;
+  --glow-rose: #ff5277;
+  --glow-emerald: #00e676;
+  --glow-blue: #448aff;
+  --phase1-color: #00e5ff;
+  --phase2-color: #b388ff;
+  --phase3-color: #ffab40;
+  --mastered-color: #00e676;
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Noto Sans SC', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: auto;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,229,255,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(179,136,255,0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grid background */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== HEADER ===== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(6,7,11,0.92);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--border-dim);
+  padding: 1rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.header-logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--glow-cyan), var(--glow-violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stats-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-badge .count {
+  color: var(--glow-emerald);
+  font-weight: 500;
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.btn:hover {
+  border-color: var(--border-active);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.btn-edit {
+  border-color: rgba(0,229,255,0.3);
+  color: var(--glow-cyan);
+}
+
+.btn-edit:hover {
+  background: rgba(0,229,255,0.08);
+  border-color: rgba(0,229,255,0.5);
+  box-shadow: 0 0 20px rgba(0,229,255,0.1);
+}
+
+.btn-edit.active {
+  background: rgba(0,229,255,0.12);
+  border-color: var(--glow-cyan);
+  color: var(--glow-cyan);
+  box-shadow: 0 0 20px rgba(0,229,255,0.15);
+}
+
+.btn-save {
+  border-color: rgba(0,230,118,0.3);
+  color: var(--glow-emerald);
+}
+
+.btn-save:hover {
+  background: rgba(0,230,118,0.08);
+  border-color: rgba(0,230,118,0.5);
+}
+
+/* ===== LEGEND ===== */
+.legend {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.8rem 2.5rem;
+  border-bottom: 1px solid var(--border-dim);
+  background: rgba(6,7,11,0.6);
+  position: sticky;
+  top: 54px;
+  z-index: 99;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-dot.unlearned { background: var(--node-unlearned); border: 1px solid var(--node-unlearned-border); }
+.legend-dot.mastered { background: var(--glow-emerald); box-shadow: 0 0 8px var(--glow-emerald); }
+.legend-dot.phase1 { background: var(--phase1-color); box-shadow: 0 0 8px var(--phase1-color); }
+.legend-dot.phase2 { background: var(--phase2-color); box-shadow: 0 0 8px var(--phase2-color); }
+.legend-dot.phase3 { background: var(--phase3-color); box-shadow: 0 0 8px var(--phase3-color); }
+
+/* ===== GRAPH CONTAINER ===== */
+.graph-container {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 2rem 4rem;
+  overflow-x: auto;
+  min-height: calc(100vh - 120px);
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: fit-content;
+}
+
+/* ===== ROOT NODE ===== */
+.root-node {
+  position: relative;
+  margin-bottom: 3rem;
+}
+
+.root-node .node-card {
+  background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(179,136,255,0.06));
+  border: 1px solid rgba(0,229,255,0.2);
+  padding: 1.2rem 2.5rem;
+  border-radius: 12px;
+  text-align: center;
+  cursor: default;
+}
+
+.root-node .node-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--glow-cyan), var(--glow-violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.root-node .node-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  letter-spacing: 0.05em;
+}
+
+/* ===== TIER (PHASE) ROW ===== */
+.tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  width: 100%;
+}
+
+.tier-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+}
+
+.tier-label.phase1 { color: var(--phase1-color); background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.15); }
+.tier-label.phase2 { color: var(--phase2-color); background: rgba(179,136,255,0.06); border: 1px solid rgba(179,136,255,0.15); }
+.tier-label.phase3 { color: var(--phase3-color); background: rgba(255,171,64,0.06); border: 1px solid rgba(255,171,64,0.15); }
+.tier-label.mastered { color: var(--mastered-color); background: rgba(0,230,118,0.06); border: 1px solid rgba(0,230,118,0.15); }
+
+.tier-nodes {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1400px;
+}
+
+/* ===== BRANCH (PARENT + CHILDREN) ===== */
+.branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.branch-connector {
+  width: 1px;
+  height: 16px;
+  background: var(--border-dim);
+  transition: background 0.6s;
+}
+
+.branch.has-mastered > .branch-connector {
+  background: rgba(0,230,118,0.3);
+  box-shadow: 0 0 4px rgba(0,230,118,0.2);
+}
+
+/* ===== NODE CARD ===== */
+.node-card {
+  position: relative;
+  background: var(--node-unlearned);
+  border: 1px solid var(--node-unlearned-border);
+  border-radius: 10px;
+  padding: 1rem 1.3rem;
+  min-width: 180px;
+  max-width: 220px;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+  overflow: hidden;
+}
+
+.node-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 11px;
+  padding: 1px;
+  background: transparent;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: background 0.6s;
+  pointer-events: none;
+}
+
+.node-card .node-icon {
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+  filter: grayscale(1) opacity(0.4);
+  transition: all 0.6s;
+}
+
+.node-card .node-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--node-unlearned-text);
+  transition: color 0.4s;
+  margin-bottom: 0.3rem;
+}
+
+.node-card .node-desc {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  transition: color 0.4s;
+}
+
+/* ===== CHILDREN ROW ===== */
+.children {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 240px;
+  padding-top: 0.5rem;
+}
+
+.child-node {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background: rgba(28,32,48,0.6);
+  border: 1px solid var(--node-unlearned-border);
+  color: var(--text-muted);
+  cursor: default;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+/* ===== EDIT MODE ===== */
+body.edit-mode .node-card {
+  cursor: pointer;
+}
+
+body.edit-mode .node-card:hover {
+  border-color: var(--border-active);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+body.edit-mode .child-node {
+  cursor: pointer;
+}
+
+body.edit-mode .child-node:hover {
+  border-color: var(--border-active);
+  background: rgba(40,45,70,0.8);
+  color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+/* ===== MASTERED STATE ===== */
+.node-card.mastered {
+  background: rgba(0,230,118,0.04);
+  border-color: rgba(0,230,118,0.25);
+  box-shadow:
+    0 0 20px rgba(0,230,118,0.08),
+    0 0 60px rgba(0,230,118,0.03),
+    inset 0 0 30px rgba(0,230,118,0.02);
+}
+
+.node-card.mastered::before {
+  background: linear-gradient(135deg, rgba(0,230,118,0.5), rgba(0,229,255,0.3), rgba(179,136,255,0.3));
+  animation: borderRotate 4s linear infinite;
+}
+
+.node-card.mastered .node-icon {
+  filter: none;
+  animation: iconPulse 3s ease-in-out infinite;
+}
+
+.node-card.mastered .node-title {
+  color: var(--glow-emerald);
+  text-shadow: 0 0 20px rgba(0,230,118,0.3);
+}
+
+.node-card.mastered .node-desc {
+  color: var(--text-secondary);
+}
+
+/* Mastered child node */
+.child-node.mastered {
+  background: rgba(0,230,118,0.08);
+  border-color: rgba(0,230,118,0.3);
+  color: var(--glow-emerald);
+  box-shadow: 0 0 12px rgba(0,230,118,0.1);
+}
+
+/* Phase-specific mastered glow */
+.node-card.mastered.phase1-glow {
+  box-shadow: 0 0 25px rgba(0,229,255,0.1), 0 0 60px rgba(0,229,255,0.04);
+}
+.node-card.mastered.phase1-glow::before {
+  background: linear-gradient(135deg, var(--glow-cyan), rgba(0,229,255,0.2), var(--glow-emerald));
+}
+.node-card.mastered.phase1-glow .node-title { color: var(--glow-cyan); text-shadow: 0 0 20px rgba(0,229,255,0.4); }
+
+.node-card.mastered.phase2-glow {
+  box-shadow: 0 0 25px rgba(179,136,255,0.1), 0 0 60px rgba(179,136,255,0.04);
+}
+.node-card.mastered.phase2-glow::before {
+  background: linear-gradient(135deg, var(--glow-violet), rgba(179,136,255,0.2), var(--glow-emerald));
+}
+.node-card.mastered.phase2-glow .node-title { color: var(--glow-violet); text-shadow: 0 0 20px rgba(179,136,255,0.4); }
+
+.node-card.mastered.phase3-glow {
+  box-shadow: 0 0 25px rgba(255,171,64,0.1), 0 0 60px rgba(255,171,64,0.04);
+}
+.node-card.mastered.phase3-glow::before {
+  background: linear-gradient(135deg, var(--glow-amber), rgba(255,171,64,0.2), var(--glow-emerald));
+}
+.node-card.mastered.phase3-glow .node-title { color: var(--glow-amber); text-shadow: 0 0 20px rgba(255,171,64,0.4); }
+
+/* ===== IGNITE ANIMATION ===== */
+@keyframes ignite {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.06); }
+  30% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes borderRotate {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.9; }
+}
+
+@keyframes particleBurst {
+  0% { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0,230,118,0.08), 0 0 60px rgba(0,230,118,0.03); }
+  50% { box-shadow: 0 0 30px rgba(0,230,118,0.12), 0 0 80px rgba(0,230,118,0.05); }
+}
+
+.node-card.just-mastered {
+  animation: ignite 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.node-card.mastered {
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+/* Particle container */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 10;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--glow-emerald);
+  top: 50%;
+  left: 50%;
+  animation: particleBurst 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 0 0 6px var(--glow-emerald);
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-container {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(12,14,20,0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 320px;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-card);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--glow-cyan), var(--glow-emerald));
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 10px rgba(0,230,118,0.3);
+}
+
+.progress-text {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 5rem;
+  right: 2rem;
+  z-index: 200;
+  background: rgba(12,14,20,0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0,230,118,0.3);
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--glow-emerald);
+  transform: translateX(120%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 30px rgba(0,230,118,0.1);
+}
+
+.toast.show {
+  transform: translateX(0);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .tier-nodes { flex-direction: column; align-items: center; }
+  .header { padding: 1rem 1.2rem; }
+  .graph-container { padding: 2rem 1rem; }
+  .legend { padding: 0.8rem 1.2rem; gap: 1rem; flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">Knowledge Graph</div>
+    <div class="header-subtitle">AI Agent Engineering Learning Path</div>
+  </div>
+  <div class="header-right">
+    <div class="stats-badge">
+      Mastered: <span class="count" id="masteredCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <button class="btn btn-edit" id="editBtn" onclick="toggleEditMode()">Edit Mode</button>
+    <button class="btn btn-save" id="saveBtn" onclick="saveState()">Save</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot unlearned"></div>未学习</div>
+  <div class="legend-item"><div class="legend-dot mastered"></div>已掌握</div>
+  <div class="legend-item"><div class="legend-dot phase1"></div>Phase 1 核心机制</div>
+  <div class="legend-item"><div class="legend-dot phase2"></div>Phase 2 智能层</div>
+  <div class="legend-item"><div class="legend-dot phase3"></div>Phase 3 生产强化</div>
+</div>
+
+<div class="graph-container">
+  <div class="tree" id="tree"></div>
+</div>
+
+<div class="progress-container">
+  <div class="progress-text" id="progressLabel">0% Complete</div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== KNOWLEDGE DATA =====
+const knowledgeData = {
+  root: {
+    title: "AI Agent Engineering",
+    subtitle: "From Claude Code internals to production audit agents"
+  },
+  phases: [
+    {
+      id: "mastered",
+      label: "已掌握 — Mastered",
+      labelClass: "mastered",
+      nodes: [
+        {
+          id: "mcp-protocol",
+          icon: "🔌",
+          title: "MCP 协议",
+          desc: "设计哲学与落地",
+          phase: "mastered",
+          mastered: true,
+          children: [
+            { id: "mcp-nxm", label: "N×M 问题", mastered: true },
+            { id: "mcp-primitives", label: "三大原语", mastered: true },
+            { id: "mcp-capability", label: "Capability Negotiation", mastered: true },
+            { id: "mcp-transport", label: "Transport 抽象", mastered: true },
+            { id: "mcp-security", label: "安全边界 & Sampling", mastered: true }
+          ]
+        },
+        {
+          id: "agent-tracing",
+          icon: "🔍",
+          title: "Agent Tracing",
+          desc: "可观测性三层模型",
+          phase: "mastered",
+          mastered: true,
+          children: [
+            { id: "trace-3layer", label: "三层模型", mastered: true },
+            { id: "trace-decision", label: "decision_context", mastered: true },
+            { id: "trace-input", label: "input_sources", mastered: true },
+            { id: "trace-workflow", label: "分析工作流", mastered: true },
+            { id: "trace-cot", label: "CoT 陷阱", mastered: true }
+          ]
+        },
+        {
+          id: "arch-patterns",
+          icon: "🏗️",
+          title: "架构精妙设计",
+          desc: "9 个深度洞察",
+          phase: "mastered",
+          mastered: true,
+          children: [
+            { id: "arch-cache", label: "Prompt Cache", mastered: true },
+            { id: "arch-retry", label: "三层重试", mastered: true },
+            { id: "arch-state", label: "State 对象模式", mastered: true },
+            { id: "arch-yield", label: "yield* 管道", mastered: true },
+            { id: "arch-perm", label: "权限四层守卫", mastered: true },
+            { id: "arch-fold", label: "消息折叠", mastered: true },
+            { id: "arch-toolsearch", label: "ToolSearch 延迟", mastered: true },
+            { id: "arch-boot", label: "启动优化", mastered: true },
+            { id: "arch-ff", label: "Feature Flag", mastered: true }
+          ]
+        },
+        {
+          id: "cross-patterns",
+          icon: "🔗",
+          title: "跨主题模式",
+          desc: "设计哲学贯通",
+          phase: "mastered",
+          mastered: true,
+          children: [
+            { id: "cross-explicit", label: "显式优于隐式", mastered: true },
+            { id: "cross-progressive", label: "Progressive Complexity", mastered: true },
+            { id: "cross-graceful", label: "Graceful Degradation", mastered: true }
+          ]
+        }
+      ]
+    },
+    {
+      id: "phase1",
+      label: "Phase 1 — 核心机制",
+      labelClass: "phase1",
+      nodes: [
+        {
+          id: "core-loop",
+          icon: "🔄",
+          title: "Agent 核心循环",
+          desc: "ReAct · 状态流转 · 流式",
+          phase: "phase1",
+          mastered: false,
+          children: [
+            { id: "loop-react", label: "ReAct 循环", mastered: false },
+            { id: "loop-state", label: "状态流转", mastered: false },
+            { id: "loop-stream", label: "流式处理", mastered: false },
+            { id: "loop-interrupt", label: "中断与恢复", mastered: false },
+            { id: "loop-double", label: "双层循环架构", mastered: false }
+          ]
+        },
+        {
+          id: "tool-system",
+          icon: "🔧",
+          title: "Tool 系统设计",
+          desc: "注册 · 发现 · 权限 · Handler",
+          phase: "phase1",
+          mastered: false,
+          children: [
+            { id: "tool-registry", label: "注册与发现", mastered: false },
+            { id: "tool-handler", label: "Handler 模式", mastered: false },
+            { id: "tool-permission", label: "权限控制", mastered: false },
+            { id: "tool-lazy", label: "延迟加载", mastered: false },
+            { id: "tool-mcp", label: "MCP 集成", mastered: false }
+          ]
+        },
+        {
+          id: "prompt-eng",
+          icon: "📝",
+          title: "Prompt 工程",
+          desc: "组装 · 上下文 · 版本管理",
+          phase: "phase1",
+          mastered: false,
+          children: [
+            { id: "prompt-assembly", label: "系统提示词组装", mastered: false },
+            { id: "prompt-context", label: "上下文工程", mastered: false },
+            { id: "prompt-version", label: "版本管理", mastered: false },
+            { id: "prompt-fewshot", label: "Few-shot 设计", mastered: false },
+            { id: "prompt-inject", label: "动态注入", mastered: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: "phase2",
+      label: "Phase 2 — 智能层",
+      labelClass: "phase2",
+      nodes: [
+        {
+          id: "skill-system",
+          icon: "⚡",
+          title: "Skill 系统",
+          desc: "加载 · 扫描 · 注入 · 防循环",
+          phase: "phase2",
+          mastered: false,
+          children: [
+            { id: "skill-2phase", label: "两阶段加载", mastered: false },
+            { id: "skill-scan", label: "目录扫描优先级", mastered: false },
+            { id: "skill-inject", label: "系统提示注入", mastered: false },
+            { id: "skill-antiloop", label: "防循环设计", mastered: false },
+            { id: "skill-progressive", label: "渐进式知识 L1-L4", mastered: false }
+          ]
+        },
+        {
+          id: "memory-system",
+          icon: "🧠",
+          title: "Memory 系统",
+          desc: "短期 · 长期 · 压缩 · 淘汰",
+          phase: "phase2",
+          mastered: false,
+          children: [
+            { id: "mem-shortterm", label: "短期/上下文窗口", mastered: false },
+            { id: "mem-longterm", label: "长期/持久化", mastered: false },
+            { id: "mem-session", label: "会话状态", mastered: false },
+            { id: "mem-compact", label: "压缩策略", mastered: false },
+            { id: "mem-evict", label: "TTL + LRU 淘汰", mastered: false }
+          ]
+        },
+        {
+          id: "planning",
+          icon: "📋",
+          title: "Planning 模式",
+          desc: "生成 · 门控 · 分解 · 执行",
+          phase: "phase2",
+          mastered: false,
+          children: [
+            { id: "plan-gen", label: "计划生成", mastered: false },
+            { id: "plan-gate", label: "确认门控", mastered: false },
+            { id: "plan-adjust", label: "动态调整", mastered: false },
+            { id: "plan-decompose", label: "任务分解", mastered: false },
+            { id: "plan-seqpar", label: "Sequential vs Parallel", mastered: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: "phase3",
+      label: "Phase 3 — 生产强化",
+      labelClass: "phase3",
+      nodes: [
+        {
+          id: "error-recovery",
+          icon: "🛡️",
+          title: "错误恢复",
+          desc: "重试 · 降级 · 回滚 · 升级",
+          phase: "phase3",
+          mastered: false,
+          children: [
+            { id: "err-retry", label: "重试阶梯", mastered: false },
+            { id: "err-degrade", label: "降级策略", mastered: false },
+            { id: "err-classify", label: "故障分类", mastered: false },
+            { id: "err-rollback", label: "回滚机制", mastered: false },
+            { id: "err-escalate", label: "人工升级", mastered: false }
+          ]
+        },
+        {
+          id: "permissions",
+          icon: "🔐",
+          title: "权限与安全",
+          desc: "多层守卫 · Policy · 审计",
+          phase: "phase3",
+          mastered: false,
+          children: [
+            { id: "perm-layers", label: "多层守卫", mastered: false },
+            { id: "perm-sensitivity", label: "实体敏感度", mastered: false },
+            { id: "perm-policy", label: "Policy Engine", mastered: false },
+            { id: "perm-validate", label: "输入验证", mastered: false },
+            { id: "perm-audit", label: "审计日志", mastered: false }
+          ]
+        },
+        {
+          id: "multi-agent",
+          icon: "🤝",
+          title: "Multi-Agent",
+          desc: "协作 · 分发 · A2A · Swarm",
+          phase: "phase3",
+          mastered: false,
+          children: [
+            { id: "ma-models", label: "协作模型", mastered: false },
+            { id: "ma-spawn", label: "Agent Spawning", mastered: false },
+            { id: "ma-task", label: "任务分配", mastered: false },
+            { id: "ma-a2a", label: "A2A 协议", mastered: false },
+            { id: "ma-swarm", label: "Swarm 模式", mastered: false }
+          ]
+        },
+        {
+          id: "reflection",
+          icon: "🪞",
+          title: "Reflection",
+          desc: "自纠 · Follow-up · 错误追踪",
+          phase: "phase3",
+          mastered: false,
+          children: [
+            { id: "ref-selfcorrect", label: "自我纠错", mastered: false },
+            { id: "ref-followup", label: "Follow-up 生成", mastered: false },
+            { id: "ref-producer", label: "Producer-Reviewer", mastered: false },
+            { id: "ref-errcount", label: "错误计数", mastered: false }
+          ]
+        },
+        {
+          id: "rag",
+          icon: "📚",
+          title: "RAG",
+          desc: "Standard · Graph · Agentic",
+          phase: "phase3",
+          mastered: false,
+          children: [
+            { id: "rag-standard", label: "Standard RAG", mastered: false },
+            { id: "rag-graph", label: "Graph RAG", mastered: false },
+            { id: "rag-agentic", label: "Agentic RAG", mastered: false },
+            { id: "rag-hybrid", label: "混合检索", mastered: false }
+          ]
+        },
+        {
+          id: "evaluation",
+          icon: "📊",
+          title: "评估与监控",
+          desc: "Judge · 漂移 · Contract",
+          phase: "phase3",
+          mastered: false,
+          children: [
+            { id: "eval-judge", label: "LLM-as-Judge", mastered: false },
+            { id: "eval-semantic", label: "语义相似度", mastered: false },
+            { id: "eval-drift", label: "漂移检测", mastered: false },
+            { id: "eval-contract", label: "AI Contract", mastered: false }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// ===== STATE MANAGEMENT =====
+let state = {};
+let editMode = false;
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('knowledge-graph-state');
+    if (saved) {
+      state = JSON.parse(saved);
+    } else {
+      initStateFromData();
+    }
+  } catch (e) {
+    initStateFromData();
+  }
+}
+
+function initStateFromData() {
+  state = {};
+  knowledgeData.phases.forEach(phase => {
+    phase.nodes.forEach(node => {
+      state[node.id] = node.mastered;
+      node.children.forEach(child => {
+        state[child.id] = child.mastered;
+      });
+    });
+  });
+}
+
+function saveState() {
+  localStorage.setItem('knowledge-graph-state', JSON.stringify(state));
+  showToast('Progress saved successfully');
+
+  // Also try to save to file via companion server
+  saveToFile();
+}
+
+async function saveToFile() {
+  try {
+    const response = await fetch('/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state, timestamp: new Date().toISOString() })
+    });
+    if (response.ok) {
+      showToast('Saved to disk ✓');
+    }
+  } catch (e) {
+    // Companion server not running, localStorage is fine
+  }
+}
+
+// ===== RENDERING =====
+function renderTree() {
+  const tree = document.getElementById('tree');
+  tree.innerHTML = '';
+
+  // Root node
+  const rootEl = document.createElement('div');
+  rootEl.className = 'root-node';
+  rootEl.innerHTML = `
+    <div class="node-card">
+      <div class="node-title">${knowledgeData.root.title}</div>
+      <div class="node-subtitle">${knowledgeData.root.subtitle}</div>
+    </div>
+  `;
+  tree.appendChild(rootEl);
+
+  // Phase tiers
+  knowledgeData.phases.forEach(phase => {
+    const tierEl = document.createElement('div');
+    tierEl.className = 'tier';
+
+    const labelEl = document.createElement('div');
+    labelEl.className = `tier-label ${phase.labelClass}`;
+    labelEl.textContent = phase.label;
+    tierEl.appendChild(labelEl);
+
+    const nodesRow = document.createElement('div');
+    nodesRow.className = 'tier-nodes';
+
+    phase.nodes.forEach(node => {
+      const branchEl = document.createElement('div');
+      const hasMastered = state[node.id];
+      branchEl.className = `branch${hasMastered ? ' has-mastered' : ''}`;
+
+      const connectorEl = document.createElement('div');
+      connectorEl.className = 'branch-connector';
+      branchEl.appendChild(connectorEl);
+
+      // Node card
+      const cardEl = document.createElement('div');
+      const isMastered = state[node.id];
+      let cardClass = 'node-card';
+      if (isMastered) cardClass += ` mastered ${node.phase}-glow`;
+      cardEl.className = cardClass;
+      cardEl.dataset.id = node.id;
+      cardEl.onclick = () => handleNodeClick(node.id, node.phase);
+
+      cardEl.innerHTML = `
+        <div class="particles"></div>
+        <div class="node-icon">${node.icon}</div>
+        <div class="node-title">${node.title}</div>
+        <div class="node-desc">${node.desc}</div>
+      `;
+      branchEl.appendChild(cardEl);
+
+      // Children
+      if (node.children && node.children.length > 0) {
+        const childrenEl = document.createElement('div');
+        childrenEl.className = 'children';
+
+        node.children.forEach(child => {
+          const childEl = document.createElement('div');
+          let childClass = 'child-node';
+          if (state[child.id]) childClass += ' mastered';
+          childEl.className = childClass;
+          childEl.textContent = child.label;
+          childEl.dataset.id = child.id;
+          childEl.dataset.parent = node.id;
+          childEl.onclick = (e) => { e.stopPropagation(); handleChildClick(child.id, node.id, node.phase); };
+          childrenEl.appendChild(childEl);
+        });
+
+        branchEl.appendChild(childrenEl);
+      }
+
+      nodesRow.appendChild(branchEl);
+    });
+
+    tierEl.appendChild(nodesRow);
+    tree.appendChild(tierEl);
+  });
+
+  updateStats();
+}
+
+// ===== INTERACTIONS =====
+function handleNodeClick(nodeId, phase) {
+  if (!editMode) return;
+
+  state[nodeId] = !state[nodeId];
+
+  // If mastering parent, also master all children
+  if (state[nodeId]) {
+    knowledgeData.phases.forEach(p => {
+      p.nodes.forEach(n => {
+        if (n.id === nodeId) {
+          n.children.forEach(c => { state[c.id] = true; });
+        }
+      });
+    });
+  }
+
+  renderTree();
+
+  if (state[nodeId]) {
+    setTimeout(() => emitParticles(nodeId), 50);
+  }
+}
+
+function handleChildClick(childId, parentId, phase) {
+  if (!editMode) return;
+
+  state[childId] = !state[childId];
+
+  // Check if all children mastered → master parent
+  let allChildrenMastered = true;
+  knowledgeData.phases.forEach(p => {
+    p.nodes.forEach(n => {
+      if (n.id === parentId) {
+        n.children.forEach(c => {
+          if (!state[c.id]) allChildrenMastered = false;
+        });
+      }
+    });
+  });
+
+  if (allChildrenMastered) {
+    state[parentId] = true;
+  } else if (!state[childId]) {
+    // If unchecking a child, unmaster parent
+    state[parentId] = false;
+  }
+
+  renderTree();
+
+  if (state[childId]) {
+    setTimeout(() => emitParticlesOnChild(childId), 50);
+  }
+}
+
+function emitParticles(nodeId) {
+  const card = document.querySelector(`.node-card[data-id="${nodeId}"]`);
+  if (!card) return;
+
+  card.classList.add('just-mastered');
+  setTimeout(() => card.classList.remove('just-mastered'), 600);
+
+  const particlesContainer = card.querySelector('.particles');
+  if (!particlesContainer) return;
+
+  for (let i = 0; i < 12; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    const angle = (Math.PI * 2 * i) / 12;
+    const distance = 40 + Math.random() * 30;
+    particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+    particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+    particle.style.animationDelay = `${Math.random() * 0.2}s`;
+    particlesContainer.appendChild(particle);
+    setTimeout(() => particle.remove(), 1000);
+  }
+}
+
+function emitParticlesOnChild(childId) {
+  const el = document.querySelector(`.child-node[data-id="${childId}"]`);
+  if (!el) return;
+  el.style.transform = 'scale(1.15)';
+  setTimeout(() => { el.style.transform = ''; }, 300);
+}
+
+// ===== EDIT MODE =====
+function toggleEditMode() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  const btn = document.getElementById('editBtn');
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? '● Editing' : 'Edit Mode';
+}
+
+// ===== STATS =====
+function updateStats() {
+  let total = 0;
+  let mastered = 0;
+
+  knowledgeData.phases.forEach(phase => {
+    phase.nodes.forEach(node => {
+      node.children.forEach(child => {
+        total++;
+        if (state[child.id]) mastered++;
+      });
+    });
+  });
+
+  document.getElementById('masteredCount').textContent = mastered;
+  document.getElementById('totalCount').textContent = total;
+
+  const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = `${pct}%`;
+  document.getElementById('progressLabel').textContent = `${pct}% Complete`;
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ===== INIT =====
+loadState();
+renderTree();
+</script>
+</body>
+</html>
