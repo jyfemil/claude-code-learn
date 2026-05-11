@@ -605,10 +605,10 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 class Rocket {
-  constructor(x, targetY, color) {
-    this.x = x; this.y = canvas.height;
+  constructor(x, startY, targetY, color) {
+    this.x = x; this.y = startY;
     this.targetY = targetY;
-    this.vy = -(8 + Math.random()*4);
+    this.vy = -(6 + Math.random()*3);
     this.color = color;
     this.trail = [];
     this.alive = true;
@@ -684,18 +684,16 @@ function explode(x, y, baseColor) {
 function launchFirework(originEl, stateVal) {
   const rect = originEl.getBoundingClientRect();
   const x = rect.left + rect.width/2;
-  const baseY = rect.top;
-  const color = stateVal === S_DONE ? '#10b981' : '#f59e0b';
+  const startY = rect.top + rect.height/2;
   const colorName = stateVal === S_DONE ? 'green' : 'gold';
 
-  // Launch 2-3 rockets from the element position
   const count = 2 + Math.floor(Math.random()*2);
   for (let i = 0; i < count; i++) {
-    const rx = x + (Math.random()-0.5) * 60;
-    const targetY = baseY - 80 - Math.random() * 120;
+    const rx = x + (Math.random()-0.5) * 40;
+    const targetY = startY - 100 - Math.random() * 100;
     setTimeout(() => {
-      rockets.push(new Rocket(rx, targetY, colorName));
-    }, i * 120);
+      rockets.push(new Rocket(rx, startY, targetY, colorName));
+    }, i * 100);
   }
 }
 
@@ -832,14 +830,20 @@ function cycleNode(id, el) {
     if(n.id===id) n.children.forEach(c=>{state[c.id]=nv;});
   }));
   render();
-  if (nv > 0) triggerFirework(el, nv);
+  if (nv > 0) {
+    const newEl = document.querySelector(`.node-card[data-id="${id}"]`);
+    if (newEl) triggerFirework(newEl, nv);
+  }
 }
 
 function cycleChild(cid, pid, el) {
   state[cid] = cycle(state[cid]||0);
   deriveParent(pid);
   render();
-  if (state[cid] > 0) triggerFirework(el, state[cid]);
+  if (state[cid] > 0) {
+    const newEl = document.querySelector(`.child[data-id="${cid}"]`);
+    if (newEl) triggerFirework(newEl, state[cid]);
+  }
 }
 
 function deriveParent(pid) {
