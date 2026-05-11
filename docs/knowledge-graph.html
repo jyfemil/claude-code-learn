@@ -827,7 +827,20 @@ function cycleNode(id, el) {
   const nv = cycle(state[id]||0);
   state[id] = nv;
   DATA.phases.forEach(p=>p.nodes.forEach(n=>{
-    if(n.id===id) n.children.forEach(c=>{state[c.id]=nv;});
+    if(n.id===id) {
+      if (nv === S_LEARN) {
+        // Learning: only mark first child as learning, leave others unchanged
+        if (n.children.length > 0 && (state[n.children[0].id]||0) === S_NONE) {
+          state[n.children[0].id] = S_LEARN;
+        }
+      } else if (nv === S_DONE) {
+        // Done: mark all children as done
+        n.children.forEach(c=>{state[c.id]=S_DONE;});
+      } else {
+        // Reset: mark all children as unlearned
+        n.children.forEach(c=>{state[c.id]=S_NONE;});
+      }
+    }
   }));
   render();
   if (nv > 0) {
