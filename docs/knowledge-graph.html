@@ -3,45 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Agent Engineering — Knowledge Graph</title>
+<title>Agent Engineering — Knowledge Graph</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
 
 :root {
-  --bg-page: #f8f9fc;
-  --bg-surface: #ffffff;
+  --bg: #fafafa;
   --bg-card: #ffffff;
-  --bg-card-hover: #f0f2f8;
-  --border: #e2e5ef;
-  --border-hover: #c8cce0;
-  --text-primary: #1a1d2e;
-  --text-secondary: #5a6080;
-  --text-muted: #9098b8;
-  --node-unlearned-bg: #f0f1f6;
-  --node-unlearned-border: #dfe2ec;
-  --node-unlearned-text: #8890a8;
-  --color-cyan: #0891b2;
-  --color-violet: #7c3aed;
-  --color-amber: #d97706;
-  --color-emerald: #059669;
-  --color-blue: #2563eb;
-  --color-rose: #e11d48;
-  --phase1-color: #0891b2;
-  --phase2-color: #7c3aed;
-  --phase3-color: #d97706;
-  --mastered-color: #059669;
-  --inprogress-color: #2563eb;
+  --border: #e8e8e8;
+  --border-hover: #d0d0d0;
+  --text: #1c1c1c;
+  --text-secondary: #666666;
+  --text-muted: #aaaaaa;
+
+  /* Only 3 semantic colors */
+  --unlearned: #e4e4e4;
+  --unlearned-text: #999999;
+  --learning: #f59e0b;
+  --learning-bg: #fffbeb;
+  --learning-border: #f59e0b;
+  --done: #10b981;
+  --done-bg: #ecfdf5;
+  --done-border: #10b981;
+
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Noto Sans SC', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+  --radius: 10px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 16px; scroll-behavior: smooth; }
 
 body {
-  background: var(--bg-page);
-  color: var(--text-primary);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-body);
   min-height: 100vh;
   overflow-x: auto;
@@ -52,174 +48,126 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(16px) saturate(1.3);
+  background: rgba(250,250,250,0.9);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  padding: 0.9rem 2rem;
+  padding: 0.8rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
 }
 
 .header-left {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
+  align-items: baseline;
+  gap: 0.8rem;
 }
 
 .header-logo {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--color-cyan), var(--color-violet));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text);
 }
 
 .header-subtitle {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
-.stats-badge {
+.stats {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  background: var(--bg-page);
-  border: 1px solid var(--border);
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.8rem;
+  padding-right: 0.8rem;
+  border-right: 1px solid var(--border);
+  margin-right: 0.4rem;
 }
 
-.stats-badge .count {
-  color: var(--mastered-color);
-  font-weight: 600;
-}
+.stat-item { display: flex; align-items: center; gap: 0.3rem; }
+.stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+.stat-dot.learning { background: var(--learning); }
+.stat-dot.done { background: var(--done); }
 
 .btn {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  padding: 0.45rem 0.9rem;
+  padding: 0.4rem 0.85rem;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: var(--bg-surface);
+  background: white;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
+  transition: all 0.15s;
 }
 
-.btn:hover {
-  border-color: var(--border-hover);
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
-}
-
-.btn-edit { border-color: rgba(8,145,178,0.4); color: var(--color-cyan); }
-.btn-edit:hover { background: rgba(8,145,178,0.06); border-color: var(--color-cyan); }
-.btn-edit.active { background: rgba(8,145,178,0.1); border-color: var(--color-cyan); color: var(--color-cyan); box-shadow: 0 0 0 3px rgba(8,145,178,0.1); }
-
-.btn-save { border-color: rgba(5,150,105,0.4); color: var(--mastered-color); }
-.btn-save:hover { background: rgba(5,150,105,0.06); border-color: var(--mastered-color); }
-
-.btn-collapse { border-color: rgba(124,58,237,0.3); color: var(--color-violet); }
-.btn-collapse:hover { background: rgba(124,58,237,0.06); border-color: var(--color-violet); }
+.btn:hover { border-color: var(--border-hover); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.btn.active { background: var(--text); color: white; border-color: var(--text); }
 
 /* ===== LEGEND ===== */
 .legend {
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  padding: 0.7rem 2rem;
+  gap: 1.5rem;
+  padding: 0.6rem 2rem;
   border-bottom: 1px solid var(--border);
-  background: rgba(248,249,252,0.8);
-  position: sticky;
-  top: 56px;
-  z-index: 99;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   color: var(--text-secondary);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
+
+.legend-swatch {
+  width: 28px;
+  height: 14px;
+  border-radius: 3px;
 }
 
-.legend-dot.unlearned { background: var(--node-unlearned-bg); border: 1.5px solid var(--node-unlearned-border); }
-.legend-dot.inprogress { background: var(--inprogress-color); }
-.legend-dot.mastered { background: var(--mastered-color); }
-.legend-dot.phase1 { background: var(--phase1-color); }
-.legend-dot.phase2 { background: var(--phase2-color); }
-.legend-dot.phase3 { background: var(--phase3-color); }
+.legend-swatch.unlearned { background: white; border: 1.5px dashed var(--unlearned); }
+.legend-swatch.learning { background: var(--learning-bg); border: 2px solid var(--learning); }
+.legend-swatch.done { background: var(--done-bg); border: 2px solid var(--done); }
 
 .legend-hint {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: var(--text-muted);
   margin-left: auto;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
 }
 
-/* ===== GRAPH CONTAINER ===== */
+/* ===== TREE ===== */
 .graph-container {
   position: relative;
   z-index: 1;
   padding: 2.5rem 2rem 6rem;
   overflow-x: auto;
-  min-height: calc(100vh - 120px);
 }
 
 .tree {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
   min-width: fit-content;
 }
 
-/* ===== ROOT NODE ===== */
-.root-node {
-  position: relative;
-  margin-bottom: 2.5rem;
-}
+/* ===== ROOT ===== */
+.root-node { margin-bottom: 2.5rem; }
 
 .root-node .node-card {
-  background: linear-gradient(135deg, rgba(8,145,178,0.05), rgba(124,58,237,0.05));
-  border: 1.5px solid rgba(8,145,178,0.2);
-  padding: 1.2rem 2.5rem;
-  border-radius: 14px;
+  background: white;
+  border: 1.5px solid var(--border);
+  padding: 1rem 2.5rem;
+  border-radius: var(--radius);
   text-align: center;
   cursor: default;
 }
@@ -227,20 +175,18 @@ body {
 .root-node .node-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.5rem;
-  background: linear-gradient(135deg, var(--color-cyan), var(--color-violet));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 1.4rem;
+  color: var(--text);
 }
 
-.root-node .node-subtitle {
+.root-node .node-sub {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 0.3rem;
+  margin-top: 0.2rem;
 }
 
-/* ===== TIER ROW ===== */
+/* ===== TIER ===== */
 .tier {
   display: flex;
   flex-direction: column;
@@ -251,23 +197,17 @@ body {
 
 .tier-label {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 1.2rem;
   text-transform: uppercase;
-  padding: 0.35rem 1.1rem;
-  border-radius: 20px;
-  margin-bottom: 1.3rem;
 }
-
-.tier-label.phase1 { color: var(--phase1-color); background: rgba(8,145,178,0.07); border: 1px solid rgba(8,145,178,0.2); }
-.tier-label.phase2 { color: var(--phase2-color); background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.2); }
-.tier-label.phase3 { color: var(--phase3-color); background: rgba(217,119,6,0.07); border: 1px solid rgba(217,119,6,0.2); }
-.tier-label.mastered { color: var(--mastered-color); background: rgba(5,150,105,0.07); border: 1px solid rgba(5,150,105,0.2); }
 
 .tier-nodes {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.4rem;
   flex-wrap: wrap;
   justify-content: center;
   max-width: 1400px;
@@ -278,311 +218,223 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
 }
 
-.branch-connector {
-  width: 1.5px;
-  height: 14px;
+.branch-line {
+  width: 1px;
+  height: 12px;
   background: var(--border);
-  transition: background 0.5s;
+  transition: background 0.4s;
 }
 
-.branch.has-mastered > .branch-connector { background: var(--mastered-color); }
-.branch.has-inprogress > .branch-connector { background: var(--inprogress-color); }
+.branch.state-learning > .branch-line { background: var(--learning); }
+.branch.state-done > .branch-line { background: var(--done); }
 
 /* ===== NODE CARD ===== */
 .node-card {
   position: relative;
-  background: var(--node-unlearned-bg);
-  border: 1.5px solid var(--node-unlearned-border);
-  border-radius: 12px;
-  padding: 1.1rem 1.4rem;
+  background: white;
+  border: 1.5px dashed var(--unlearned);
+  border-radius: var(--radius);
+  padding: 1rem 1.3rem;
   min-width: 200px;
   max-width: 240px;
   text-align: center;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
-  overflow: visible;
+  transition: all 0.25s ease;
   user-select: none;
 }
 
-.node-card:hover {
-  border-color: var(--border-hover);
-  background: #eceef5;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-}
+.node-card:hover { transform: translateY(-1px); box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
 
 .node-card .node-icon {
-  font-size: 1.6rem;
-  margin-bottom: 0.5rem;
-  filter: grayscale(0.7) opacity(0.5);
-  transition: all 0.5s;
+  font-size: 1.5rem;
+  margin-bottom: 0.4rem;
+  opacity: 0.35;
+  transition: opacity 0.4s;
 }
 
 .node-card .node-title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1rem;
-  color: var(--node-unlearned-text);
-  transition: color 0.4s;
-  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  color: var(--unlearned-text);
+  transition: color 0.3s;
 }
 
 .node-card .node-desc {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  line-height: 1.5;
+  margin-top: 0.2rem;
 }
 
-/* ===== TOGGLE BUTTON ===== */
+/* --- State: Learning --- */
+.node-card.learning {
+  border: 2px solid var(--learning);
+  border-style: solid;
+  background: var(--learning-bg);
+  box-shadow: 0 2px 12px rgba(245,158,11,0.1);
+}
+
+.node-card.learning .node-icon { opacity: 0.85; }
+.node-card.learning .node-title { color: #92400e; }
+
+.node-card.learning::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--learning);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+}
+
+/* --- State: Done --- */
+.node-card.done {
+  border: 2px solid var(--done);
+  border-style: solid;
+  background: var(--done-bg);
+  box-shadow: 0 2px 12px rgba(16,185,129,0.1);
+}
+
+.node-card.done .node-icon { opacity: 1; }
+.node-card.done .node-title { color: #065f46; }
+
+.node-card.done::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--done);
+}
+
+/* ===== TOGGLE ===== */
 .node-toggle {
   position: absolute;
-  bottom: -11px;
+  bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--bg-surface);
-  border: 1.5px solid var(--border);
+  background: white;
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
   z-index: 5;
 }
 
-.node-toggle:hover {
-  border-color: var(--border-hover);
-  color: var(--text-secondary);
-  transform: translateX(-50%) scale(1.15);
-}
+.node-toggle:hover { transform: translateX(-50%) scale(1.2); border-color: var(--border-hover); }
+.node-toggle .arrow { transition: transform 0.25s; display: inline-block; }
+.node-toggle.collapsed .arrow { transform: rotate(-90deg); }
 
-.node-toggle .toggle-icon {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  display: inline-block;
-  line-height: 1;
-}
-
-.node-toggle.collapsed .toggle-icon {
-  transform: rotate(-90deg);
-}
-
-/* ===== CHILDREN COLLAPSE ===== */
-.children-wrapper {
+/* ===== CHILDREN ===== */
+.children-wrap {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+  transition: grid-template-rows 0.35s ease, opacity 0.25s;
   opacity: 1;
 }
-
-.children-wrapper.collapsed {
-  grid-template-rows: 0fr;
-  opacity: 0;
-}
-
+.children-wrap.collapsed { grid-template-rows: 0fr; opacity: 0; }
 .children-inner { overflow: hidden; }
 
 .children {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
   justify-content: center;
   max-width: 260px;
-  padding-top: 1rem;
+  padding-top: 0.9rem;
 }
 
-.child-node {
+.child {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 5px;
-  background: var(--node-unlearned-bg);
-  border: 1px solid var(--node-unlearned-border);
-  color: var(--node-unlearned-text);
+  font-size: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background: white;
+  border: 1px dashed var(--unlearned);
+  color: var(--unlearned-text);
   cursor: default;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s;
   white-space: nowrap;
   user-select: none;
 }
 
-/* ===== EDIT MODE ===== */
-body.edit-mode .node-card { cursor: pointer; }
-body.edit-mode .node-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-body.edit-mode .child-node { cursor: pointer; }
-body.edit-mode .child-node:hover { background: #e4e7f2; border-color: var(--border-hover); color: var(--text-secondary); transform: translateY(-1px); }
-
-/* ===== IN-PROGRESS STATE ===== */
-.node-card.inprogress {
-  background: rgba(37,99,235,0.04);
-  border-color: rgba(37,99,235,0.35);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.06);
-}
-
-.node-card.inprogress .node-icon { filter: none; }
-.node-card.inprogress .node-title { color: var(--inprogress-color); }
-.node-card.inprogress .node-desc { color: var(--text-secondary); }
-
-.child-node.inprogress {
-  background: rgba(37,99,235,0.06);
-  border-color: rgba(37,99,235,0.3);
-  color: var(--inprogress-color);
-}
-
-/* pulse ring for in-progress */
-.node-card.inprogress::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 14px;
-  border: 2px solid rgba(37,99,235,0.15);
-  animation: progressPulse 2.5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes progressPulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.01); }
-}
-
-/* ===== MASTERED STATE ===== */
-.node-card.mastered {
-  background: rgba(5,150,105,0.04);
-  border-color: rgba(5,150,105,0.35);
-  box-shadow: 0 0 0 3px rgba(5,150,105,0.06), 0 4px 16px rgba(5,150,105,0.08);
-}
-
-.node-card.mastered::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 13px;
-  padding: 1.5px;
-  background: linear-gradient(135deg, var(--mastered-color), var(--color-cyan), var(--color-violet));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: borderShift 5s linear infinite;
-  pointer-events: none;
-}
-
-.node-card.mastered .node-icon { filter: none; animation: iconFloat 3s ease-in-out infinite; }
-.node-card.mastered .node-title { color: var(--mastered-color); }
-.node-card.mastered .node-desc { color: var(--text-secondary); }
-
-.child-node.mastered {
-  background: rgba(5,150,105,0.07);
-  border-color: rgba(5,150,105,0.3);
-  color: var(--mastered-color);
+.child.learning {
+  border: 1.5px solid var(--learning);
+  border-style: solid;
+  background: var(--learning-bg);
+  color: #92400e;
   font-weight: 500;
 }
 
-/* Phase glow overrides for mastered */
-.node-card.mastered.phase1-glow { border-color: rgba(8,145,178,0.35); box-shadow: 0 0 0 3px rgba(8,145,178,0.06), 0 4px 16px rgba(8,145,178,0.08); }
-.node-card.mastered.phase1-glow .node-title { color: var(--phase1-color); }
-.node-card.mastered.phase1-glow::before { background: linear-gradient(135deg, var(--phase1-color), var(--mastered-color)); }
-
-.node-card.mastered.phase2-glow { border-color: rgba(124,58,237,0.35); box-shadow: 0 0 0 3px rgba(124,58,237,0.06), 0 4px 16px rgba(124,58,237,0.08); }
-.node-card.mastered.phase2-glow .node-title { color: var(--phase2-color); }
-.node-card.mastered.phase2-glow::before { background: linear-gradient(135deg, var(--phase2-color), var(--mastered-color)); }
-
-.node-card.mastered.phase3-glow { border-color: rgba(217,119,6,0.35); box-shadow: 0 0 0 3px rgba(217,119,6,0.06), 0 4px 16px rgba(217,119,6,0.08); }
-.node-card.mastered.phase3-glow .node-title { color: var(--phase3-color); }
-.node-card.mastered.phase3-glow::before { background: linear-gradient(135deg, var(--phase3-color), var(--mastered-color)); }
-
-.node-card.mastered.mastered-glow { border-color: rgba(5,150,105,0.4); }
-.node-card.mastered.mastered-glow .node-title { color: var(--mastered-color); }
-
-/* ===== ANIMATIONS ===== */
-@keyframes borderShift {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
+.child.done {
+  border: 1.5px solid var(--done);
+  border-style: solid;
+  background: var(--done-bg);
+  color: #065f46;
+  font-weight: 500;
 }
 
-@keyframes iconFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
+body.edit-mode .node-card { cursor: pointer; }
+body.edit-mode .node-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+body.edit-mode .child { cursor: pointer; }
+body.edit-mode .child:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
 
-@keyframes ignite {
-  0% { transform: scale(1); }
-  20% { transform: scale(1.04); }
-  40% { transform: scale(1); }
-}
-
-@keyframes particleBurst {
-  0% { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-}
-
-.node-card.just-changed { animation: ignite 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-
-.particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: visible;
-  z-index: 10;
-}
-
-.particle {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  animation: particleBurst 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.particle.emerald { background: var(--mastered-color); box-shadow: 0 0 6px var(--mastered-color); }
-.particle.blue { background: var(--inprogress-color); box-shadow: 0 0 6px var(--inprogress-color); }
-
-/* ===== PROGRESS BAR ===== */
-.progress-container {
+/* ===== PROGRESS ===== */
+.progress-bar {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(12px);
+  background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.7rem 1.4rem;
+  border-radius: 10px;
+  padding: 0.6rem 1.3rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  min-width: 340px;
+  gap: 0.8rem;
+  min-width: 300px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
 }
 
-.progress-bar-track {
+.progress-track {
   flex: 1;
-  height: 5px;
-  background: var(--node-unlearned-bg);
+  height: 6px;
+  background: #f0f0f0;
   border-radius: 3px;
   overflow: hidden;
 }
 
-.progress-bar-fill {
+.progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--inprogress-color), var(--mastered-color));
   border-radius: 3px;
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  background: linear-gradient(90deg, var(--learning), var(--done));
 }
 
-.progress-text {
+.progress-label {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-secondary);
-  white-space: nowrap;
+  min-width: 32px;
 }
 
 /* ===== TOAST ===== */
@@ -591,469 +443,422 @@ body.edit-mode .child-node:hover { background: #e4e7f2; border-color: var(--bord
   top: 4.5rem;
   right: 2rem;
   z-index: 200;
-  background: var(--bg-surface);
-  border: 1px solid rgba(5,150,105,0.3);
+  background: white;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0.7rem 1.1rem;
+  padding: 0.6rem 1rem;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--mastered-color);
-  transform: translateX(120%);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  font-size: 0.78rem;
+  color: var(--done);
+  transform: translateX(130%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
-
 .toast.show { transform: translateX(0); }
+
+/* ===== FIREWORKS CANVAS ===== */
+#fireworks {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .tier-nodes { flex-direction: column; align-items: center; }
-  .header { padding: 0.8rem 1rem; flex-wrap: wrap; }
-  .graph-container { padding: 1.5rem 1rem 5rem; }
+  .header { padding: 0.7rem 1rem; }
 }
 </style>
 </head>
 <body>
 
+<canvas id="fireworks"></canvas>
+
 <div class="header">
   <div class="header-left">
     <div class="header-logo">Knowledge Graph</div>
-    <div class="header-subtitle">AI Agent Engineering</div>
+    <div class="header-subtitle">Agent Engineering</div>
   </div>
   <div class="header-right">
-    <div class="stats-badge">
-      <span class="count" id="masteredCount">0</span> mastered ·
-      <span style="color:var(--inprogress-color);font-weight:600" id="inprogressCount">0</span> learning ·
-      <span id="totalCount">0</span> total
+    <div class="stats">
+      <div class="stat-item"><div class="stat-dot done"></div><span id="doneCount">0</span></div>
+      <div class="stat-item"><div class="stat-dot learning"></div><span id="learningCount">0</span></div>
+      <div class="stat-item"><span id="totalCount">0</span> total</div>
     </div>
-    <button class="btn btn-collapse" id="collapseBtn" onclick="toggleAllCollapse()">Collapse All</button>
-    <button class="btn btn-edit" id="editBtn" onclick="toggleEditMode()">Edit Mode</button>
-    <button class="btn btn-save" onclick="saveState()">Save</button>
+    <button class="btn" id="collapseBtn" onclick="toggleAllCollapse()">Collapse</button>
+    <button class="btn" id="editBtn" onclick="toggleEditMode()">Edit</button>
+    <button class="btn" onclick="saveState()">Save</button>
   </div>
 </div>
 
 <div class="legend">
-  <div class="legend-item"><div class="legend-dot unlearned"></div>未学习</div>
-  <div class="legend-item"><div class="legend-dot inprogress"></div>学习中</div>
-  <div class="legend-item"><div class="legend-dot mastered"></div>已掌握</div>
-  <div class="legend-item"><div class="legend-dot phase1"></div>Phase 1</div>
-  <div class="legend-item"><div class="legend-dot phase2"></div>Phase 2</div>
-  <div class="legend-item"><div class="legend-dot phase3"></div>Phase 3</div>
-  <span class="legend-hint">点击节点展开/收缩 · Edit Mode 下点击切换状态</span>
+  <div class="legend-item"><div class="legend-swatch unlearned"></div>未学习</div>
+  <div class="legend-item"><div class="legend-swatch learning"></div>学习中</div>
+  <div class="legend-item"><div class="legend-swatch done"></div>已掌握</div>
+  <span class="legend-hint">点击展开/收缩 · Edit 模式点击切换状态</span>
 </div>
 
 <div class="graph-container">
   <div class="tree" id="tree"></div>
 </div>
 
-<div class="progress-container">
-  <div class="progress-text" id="progressLabel">0%</div>
-  <div class="progress-bar-track">
-    <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
-  </div>
+<div class="progress-bar">
+  <div class="progress-label" id="progressLabel">0%</div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// States: 0 = unlearned, 1 = in-progress, 2 = mastered
-const STATE_UNLEARNED = 0;
-const STATE_INPROGRESS = 1;
-const STATE_MASTERED = 2;
+const S_NONE = 0, S_LEARN = 1, S_DONE = 2;
 
-const knowledgeData = {
-  root: { title: "AI Agent Engineering", subtitle: "From Claude Code internals to production audit agents" },
+const DATA = {
+  root: { title: "Agent Engineering", sub: "" },
   phases: [
-    {
-      id: "mastered", label: "已掌握 — Mastered", labelClass: "mastered",
-      nodes: [
-        {
-          id: "mcp-protocol", icon: "🔌", title: "MCP 协议", desc: "设计哲学与落地", phase: "mastered", defaultState: 2,
-          children: [
-            { id: "mcp-nxm", label: "N×M 问题", defaultState: 2 },
-            { id: "mcp-primitives", label: "三大原语", defaultState: 2 },
-            { id: "mcp-capability", label: "Capability Negotiation", defaultState: 2 },
-            { id: "mcp-transport", label: "Transport 抽象", defaultState: 2 },
-            { id: "mcp-security", label: "安全边界 & Sampling", defaultState: 2 }
-          ]
-        },
-        {
-          id: "agent-tracing", icon: "🔍", title: "Agent Tracing", desc: "可观测性三层模型", phase: "mastered", defaultState: 2,
-          children: [
-            { id: "trace-3layer", label: "三层模型", defaultState: 2 },
-            { id: "trace-decision", label: "decision_context", defaultState: 2 },
-            { id: "trace-input", label: "input_sources", defaultState: 2 },
-            { id: "trace-workflow", label: "分析工作流", defaultState: 2 },
-            { id: "trace-cot", label: "CoT 陷阱", defaultState: 2 }
-          ]
-        }
-      ]
-    },
-    {
-      id: "phase1", label: "Phase 1 — 核心机制", labelClass: "phase1",
-      nodes: [
-        {
-          id: "core-loop", icon: "🔄", title: "Agent 核心循环", desc: "ReAct · 状态流转 · 流式", phase: "phase1", defaultState: 0,
-          children: [
-            { id: "loop-react", label: "ReAct 循环", defaultState: 0 },
-            { id: "loop-state", label: "状态流转", defaultState: 0 },
-            { id: "loop-stream", label: "流式处理", defaultState: 0 },
-            { id: "loop-interrupt", label: "中断与恢复", defaultState: 0 },
-            { id: "loop-double", label: "双层循环架构", defaultState: 0 }
-          ]
-        },
-        {
-          id: "tool-system", icon: "🔧", title: "Tool 系统设计", desc: "注册 · 发现 · 权限 · Handler", phase: "phase1", defaultState: 0,
-          children: [
-            { id: "tool-registry", label: "注册与发现", defaultState: 0 },
-            { id: "tool-handler", label: "Handler 模式", defaultState: 0 },
-            { id: "tool-permission", label: "权限控制", defaultState: 0 },
-            { id: "tool-lazy", label: "延迟加载", defaultState: 0 },
-            { id: "tool-mcp", label: "MCP 集成", defaultState: 0 }
-          ]
-        },
-        {
-          id: "prompt-eng", icon: "📝", title: "Prompt 工程", desc: "组装 · 上下文 · 版本管理", phase: "phase1", defaultState: 0,
-          children: [
-            { id: "prompt-assembly", label: "系统提示词组装", defaultState: 0 },
-            { id: "prompt-context", label: "上下文工程", defaultState: 0 },
-            { id: "prompt-version", label: "版本管理", defaultState: 0 },
-            { id: "prompt-fewshot", label: "Few-shot 设计", defaultState: 0 },
-            { id: "prompt-inject", label: "动态注入", defaultState: 0 }
-          ]
-        }
-      ]
-    },
-    {
-      id: "phase2", label: "Phase 2 — 智能层", labelClass: "phase2",
-      nodes: [
-        {
-          id: "skill-system", icon: "⚡", title: "Skill 系统", desc: "加载 · 扫描 · 注入 · 防循环", phase: "phase2", defaultState: 0,
-          children: [
-            { id: "skill-2phase", label: "两阶段加载", defaultState: 0 },
-            { id: "skill-scan", label: "目录扫描优先级", defaultState: 0 },
-            { id: "skill-inject", label: "系统提示注入", defaultState: 0 },
-            { id: "skill-antiloop", label: "防循环设计", defaultState: 0 },
-            { id: "skill-progressive", label: "渐进式知识 L1-L4", defaultState: 0 }
-          ]
-        },
-        {
-          id: "memory-system", icon: "🧠", title: "Memory 系统", desc: "短期 · 长期 · 压缩 · 淘汰", phase: "phase2", defaultState: 0,
-          children: [
-            { id: "mem-shortterm", label: "短期/上下文窗口", defaultState: 0 },
-            { id: "mem-longterm", label: "长期/持久化", defaultState: 0 },
-            { id: "mem-session", label: "会话状态", defaultState: 0 },
-            { id: "mem-compact", label: "压缩策略", defaultState: 0 },
-            { id: "mem-evict", label: "TTL + LRU 淘汰", defaultState: 0 }
-          ]
-        },
-        {
-          id: "planning", icon: "📋", title: "Planning 模式", desc: "生成 · 门控 · 分解 · 执行", phase: "phase2", defaultState: 0,
-          children: [
-            { id: "plan-gen", label: "计划生成", defaultState: 0 },
-            { id: "plan-gate", label: "确认门控", defaultState: 0 },
-            { id: "plan-adjust", label: "动态调整", defaultState: 0 },
-            { id: "plan-decompose", label: "任务分解", defaultState: 0 },
-            { id: "plan-seqpar", label: "Sequential vs Parallel", defaultState: 0 }
-          ]
-        }
-      ]
-    },
-    {
-      id: "phase3", label: "Phase 3 — 生产强化", labelClass: "phase3",
-      nodes: [
-        {
-          id: "error-recovery", icon: "🛡️", title: "错误恢复", desc: "重试 · 降级 · 回滚 · 升级", phase: "phase3", defaultState: 0,
-          children: [
-            { id: "err-retry", label: "重试阶梯", defaultState: 0 },
-            { id: "err-degrade", label: "降级策略", defaultState: 0 },
-            { id: "err-classify", label: "故障分类", defaultState: 0 },
-            { id: "err-rollback", label: "回滚机制", defaultState: 0 },
-            { id: "err-escalate", label: "人工升级", defaultState: 0 }
-          ]
-        },
-        {
-          id: "permissions", icon: "🔐", title: "权限与安全", desc: "多层守卫 · Policy · 审计", phase: "phase3", defaultState: 0,
-          children: [
-            { id: "perm-layers", label: "多层守卫", defaultState: 0 },
-            { id: "perm-sensitivity", label: "实体敏感度", defaultState: 0 },
-            { id: "perm-policy", label: "Policy Engine", defaultState: 0 },
-            { id: "perm-validate", label: "输入验证", defaultState: 0 },
-            { id: "perm-audit", label: "审计日志", defaultState: 0 }
-          ]
-        },
-        {
-          id: "multi-agent", icon: "🤝", title: "Multi-Agent", desc: "协作 · 分发 · A2A · Swarm", phase: "phase3", defaultState: 0,
-          children: [
-            { id: "ma-models", label: "协作模型", defaultState: 0 },
-            { id: "ma-spawn", label: "Agent Spawning", defaultState: 0 },
-            { id: "ma-task", label: "任务分配", defaultState: 0 },
-            { id: "ma-a2a", label: "A2A 协议", defaultState: 0 },
-            { id: "ma-swarm", label: "Swarm 模式", defaultState: 0 }
-          ]
-        },
-        {
-          id: "reflection", icon: "🪞", title: "Reflection", desc: "自纠 · Follow-up · 错误追踪", phase: "phase3", defaultState: 0,
-          children: [
-            { id: "ref-selfcorrect", label: "自我纠错", defaultState: 0 },
-            { id: "ref-followup", label: "Follow-up 生成", defaultState: 0 },
-            { id: "ref-producer", label: "Producer-Reviewer", defaultState: 0 },
-            { id: "ref-errcount", label: "错误计数", defaultState: 0 }
-          ]
-        },
-        {
-          id: "rag", icon: "📚", title: "RAG", desc: "Standard · Graph · Agentic", phase: "phase3", defaultState: 0,
-          children: [
-            { id: "rag-standard", label: "Standard RAG", defaultState: 0 },
-            { id: "rag-graph", label: "Graph RAG", defaultState: 0 },
-            { id: "rag-agentic", label: "Agentic RAG", defaultState: 0 },
-            { id: "rag-hybrid", label: "混合检索", defaultState: 0 }
-          ]
-        },
-        {
-          id: "evaluation", icon: "📊", title: "评估与监控", desc: "Judge · 漂移 · Contract", phase: "phase3", defaultState: 0,
-          children: [
-            { id: "eval-judge", label: "LLM-as-Judge", defaultState: 0 },
-            { id: "eval-semantic", label: "语义相似度", defaultState: 0 },
-            { id: "eval-drift", label: "漂移检测", defaultState: 0 },
-            { id: "eval-contract", label: "AI Contract", defaultState: 0 }
-          ]
-        }
-      ]
-    }
+    { id:"mastered", label:"已掌握", nodes:[
+      { id:"mcp-protocol", icon:"🔌", title:"MCP 协议", desc:"设计哲学与落地", phase:"mastered", ds:2, children:[
+        {id:"mcp-nxm",label:"N×M 问题",ds:2},{id:"mcp-primitives",label:"三大原语",ds:2},{id:"mcp-capability",label:"Capability Negotiation",ds:2},{id:"mcp-transport",label:"Transport 抽象",ds:2},{id:"mcp-security",label:"安全边界 & Sampling",ds:2}
+      ]},
+      { id:"agent-tracing", icon:"🔍", title:"Agent Tracing", desc:"可观测性三层模型", phase:"mastered", ds:2, children:[
+        {id:"trace-3layer",label:"三层模型",ds:2},{id:"trace-decision",label:"decision_context",ds:2},{id:"trace-input",label:"input_sources",ds:2},{id:"trace-workflow",label:"分析工作流",ds:2},{id:"trace-cot",label:"CoT 陷阱",ds:2}
+      ]}
+    ]},
+    { id:"phase1", label:"Phase 1 — 核心机制", nodes:[
+      { id:"core-loop", icon:"🔄", title:"Agent 核心循环", desc:"ReAct · 状态流转 · 流式", phase:"phase1", ds:0, children:[
+        {id:"loop-react",label:"ReAct 循环",ds:0},{id:"loop-state",label:"状态流转",ds:0},{id:"loop-stream",label:"流式处理",ds:0},{id:"loop-interrupt",label:"中断与恢复",ds:0},{id:"loop-double",label:"双层循环架构",ds:0}
+      ]},
+      { id:"tool-system", icon:"🔧", title:"Tool 系统设计", desc:"注册 · 发现 · 权限 · Handler", phase:"phase1", ds:0, children:[
+        {id:"tool-registry",label:"注册与发现",ds:0},{id:"tool-handler",label:"Handler 模式",ds:0},{id:"tool-permission",label:"权限控制",ds:0},{id:"tool-lazy",label:"延迟加载",ds:0},{id:"tool-mcp",label:"MCP 集成",ds:0}
+      ]},
+      { id:"prompt-eng", icon:"📝", title:"Prompt 工程", desc:"组装 · 上下文 · 版本管理", phase:"phase1", ds:0, children:[
+        {id:"prompt-assembly",label:"系统提示词组装",ds:0},{id:"prompt-context",label:"上下文工程",ds:0},{id:"prompt-version",label:"版本管理",ds:0},{id:"prompt-fewshot",label:"Few-shot 设计",ds:0},{id:"prompt-inject",label:"动态注入",ds:0}
+      ]}
+    ]},
+    { id:"phase2", label:"Phase 2 — 智能层", nodes:[
+      { id:"skill-system", icon:"⚡", title:"Skill 系统", desc:"加载 · 扫描 · 注入 · 防循环", phase:"phase2", ds:0, children:[
+        {id:"skill-2phase",label:"两阶段加载",ds:0},{id:"skill-scan",label:"目录扫描优先级",ds:0},{id:"skill-inject",label:"系统提示注入",ds:0},{id:"skill-antiloop",label:"防循环设计",ds:0},{id:"skill-progressive",label:"渐进式知识 L1-L4",ds:0}
+      ]},
+      { id:"memory-system", icon:"🧠", title:"Memory 系统", desc:"短期 · 长期 · 压缩 · 淘汰", phase:"phase2", ds:0, children:[
+        {id:"mem-shortterm",label:"短期/上下文窗口",ds:0},{id:"mem-longterm",label:"长期/持久化",ds:0},{id:"mem-session",label:"会话状态",ds:0},{id:"mem-compact",label:"压缩策略",ds:0},{id:"mem-evict",label:"TTL + LRU 淘汰",ds:0}
+      ]},
+      { id:"planning", icon:"📋", title:"Planning 模式", desc:"生成 · 门控 · 分解 · 执行", phase:"phase2", ds:0, children:[
+        {id:"plan-gen",label:"计划生成",ds:0},{id:"plan-gate",label:"确认门控",ds:0},{id:"plan-adjust",label:"动态调整",ds:0},{id:"plan-decompose",label:"任务分解",ds:0},{id:"plan-seqpar",label:"Sequential vs Parallel",ds:0}
+      ]}
+    ]},
+    { id:"phase3", label:"Phase 3 — 生产强化", nodes:[
+      { id:"error-recovery", icon:"🛡️", title:"错误恢复", desc:"重试 · 降级 · 回滚 · 升级", phase:"phase3", ds:0, children:[
+        {id:"err-retry",label:"重试阶梯",ds:0},{id:"err-degrade",label:"降级策略",ds:0},{id:"err-classify",label:"故障分类",ds:0},{id:"err-rollback",label:"回滚机制",ds:0},{id:"err-escalate",label:"人工升级",ds:0}
+      ]},
+      { id:"permissions", icon:"🔐", title:"权限与安全", desc:"多层守卫 · Policy · 审计", phase:"phase3", ds:0, children:[
+        {id:"perm-layers",label:"多层守卫",ds:0},{id:"perm-sensitivity",label:"实体敏感度",ds:0},{id:"perm-policy",label:"Policy Engine",ds:0},{id:"perm-validate",label:"输入验证",ds:0},{id:"perm-audit",label:"审计日志",ds:0}
+      ]},
+      { id:"multi-agent", icon:"🤝", title:"Multi-Agent", desc:"协作 · 分发 · A2A · Swarm", phase:"phase3", ds:0, children:[
+        {id:"ma-models",label:"协作模型",ds:0},{id:"ma-spawn",label:"Agent Spawning",ds:0},{id:"ma-task",label:"任务分配",ds:0},{id:"ma-a2a",label:"A2A 协议",ds:0},{id:"ma-swarm",label:"Swarm 模式",ds:0}
+      ]},
+      { id:"reflection", icon:"🪞", title:"Reflection", desc:"自纠 · Follow-up · 错误追踪", phase:"phase3", ds:0, children:[
+        {id:"ref-selfcorrect",label:"自我纠错",ds:0},{id:"ref-followup",label:"Follow-up 生成",ds:0},{id:"ref-producer",label:"Producer-Reviewer",ds:0},{id:"ref-errcount",label:"错误计数",ds:0}
+      ]},
+      { id:"rag", icon:"📚", title:"RAG", desc:"Standard · Graph · Agentic", phase:"phase3", ds:0, children:[
+        {id:"rag-standard",label:"Standard RAG",ds:0},{id:"rag-graph",label:"Graph RAG",ds:0},{id:"rag-agentic",label:"Agentic RAG",ds:0},{id:"rag-hybrid",label:"混合检索",ds:0}
+      ]},
+      { id:"evaluation", icon:"📊", title:"评估与监控", desc:"Judge · 漂移 · Contract", phase:"phase3", ds:0, children:[
+        {id:"eval-judge",label:"LLM-as-Judge",ds:0},{id:"eval-semantic",label:"语义相似度",ds:0},{id:"eval-drift",label:"漂移检测",ds:0},{id:"eval-contract",label:"AI Contract",ds:0}
+      ]}
+    ]}
   ]
 };
 
 // ===== STATE =====
-let state = {};
-let collapsed = {};
-let editMode = false;
+let state = {}, collapsed = {}, editMode = false;
 
-function loadState() {
+function load() {
   try {
-    const saved = localStorage.getItem('knowledge-graph-state-v3');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      state = parsed.mastery || {};
-      collapsed = parsed.collapsed || {};
-    } else {
-      initStateFromData();
-    }
-  } catch (e) { initStateFromData(); }
+    const s = localStorage.getItem('kg-v4');
+    if (s) { const p = JSON.parse(s); state = p.s||{}; collapsed = p.c||{}; }
+    else init();
+  } catch(e) { init(); }
 }
 
-function initStateFromData() {
-  state = {};
-  collapsed = {};
-  knowledgeData.phases.forEach(phase => {
-    phase.nodes.forEach(node => {
-      state[node.id] = node.defaultState;
-      collapsed[node.id] = false;
-      node.children.forEach(child => { state[child.id] = child.defaultState; });
-    });
-  });
+function init() {
+  state = {}; collapsed = {};
+  DATA.phases.forEach(ph => ph.nodes.forEach(n => {
+    state[n.id] = n.ds; collapsed[n.id] = false;
+    n.children.forEach(c => { state[c.id] = c.ds; });
+  }));
 }
 
 function saveState() {
-  localStorage.setItem('knowledge-graph-state-v3', JSON.stringify({ mastery: state, collapsed, timestamp: new Date().toISOString() }));
-  showToast('Progress saved');
+  localStorage.setItem('kg-v4', JSON.stringify({s:state,c:collapsed,t:Date.now()}));
+  showToast('Saved ✓');
 }
 
-function cycleState(current) {
-  return (current + 1) % 3;
+function cycle(v) { return (v+1)%3; }
+
+// ===== FIREWORKS =====
+const canvas = document.getElementById('fireworks');
+const ctx = canvas.getContext('2d');
+let particles = [], rockets = [];
+
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Rocket {
+  constructor(x, targetY, color) {
+    this.x = x; this.y = canvas.height;
+    this.targetY = targetY;
+    this.vy = -(8 + Math.random()*4);
+    this.color = color;
+    this.trail = [];
+    this.alive = true;
+  }
+  update() {
+    this.trail.push({x:this.x, y:this.y, a:1});
+    if (this.trail.length > 8) this.trail.shift();
+    this.trail.forEach(t => t.a *= 0.85);
+    this.y += this.vy;
+    this.vy *= 0.97;
+    if (this.y <= this.targetY || this.vy > -2) {
+      this.alive = false;
+      explode(this.x, this.y, this.color);
+    }
+  }
+  draw() {
+    this.trail.forEach(t => {
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 2, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${t.a*0.6})`;
+      ctx.fill();
+    });
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 3, 0, Math.PI*2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
 }
 
-function getNodeStateClass(val) {
-  if (val === STATE_INPROGRESS) return 'inprogress';
-  if (val === STATE_MASTERED) return 'mastered';
-  return '';
+class Particle {
+  constructor(x, y, color) {
+    this.x = x; this.y = y;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 5;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.color = color;
+    this.alpha = 1;
+    this.decay = 0.015 + Math.random() * 0.02;
+    this.gravity = 0.08;
+    this.size = 2 + Math.random() * 2;
+  }
+  update() {
+    this.vx *= 0.98;
+    this.vy += this.gravity;
+    this.vy *= 0.98;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.alpha -= this.decay;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+    ctx.fillStyle = this.color;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = this.color;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function explode(x, y, baseColor) {
+  const colors = baseColor === 'gold'
+    ? ['#f59e0b','#fbbf24','#f97316','#fcd34d','#ffffff']
+    : ['#10b981','#34d399','#6ee7b7','#a7f3d0','#ffffff'];
+  for (let i = 0; i < 50; i++) {
+    particles.push(new Particle(x, y, colors[Math.floor(Math.random()*colors.length)]));
+  }
+}
+
+function launchFirework(originEl, stateVal) {
+  const rect = originEl.getBoundingClientRect();
+  const x = rect.left + rect.width/2;
+  const baseY = rect.top;
+  const color = stateVal === S_DONE ? '#10b981' : '#f59e0b';
+  const colorName = stateVal === S_DONE ? 'green' : 'gold';
+
+  // Launch 2-3 rockets from the element position
+  const count = 2 + Math.floor(Math.random()*2);
+  for (let i = 0; i < count; i++) {
+    const rx = x + (Math.random()-0.5) * 60;
+    const targetY = baseY - 80 - Math.random() * 120;
+    setTimeout(() => {
+      rockets.push(new Rocket(rx, targetY, colorName));
+    }, i * 120);
+  }
+}
+
+let animating = false;
+function animate() {
+  if (rockets.length === 0 && particles.length === 0) { animating = false; ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+  animating = true;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  rockets = rockets.filter(r => { r.update(); r.draw(); return r.alive; });
+  particles = particles.filter(p => { p.update(); p.draw(); return p.alpha > 0.01; });
+
+  requestAnimationFrame(animate);
+}
+
+function triggerFirework(el, stateVal) {
+  launchFirework(el, stateVal);
+  if (!animating) { animating = true; animate(); }
 }
 
 // ===== RENDER =====
-function renderTree() {
+function render() {
   const tree = document.getElementById('tree');
   tree.innerHTML = '';
 
-  const rootEl = document.createElement('div');
-  rootEl.className = 'root-node';
-  rootEl.innerHTML = `<div class="node-card"><div class="node-title">${knowledgeData.root.title}</div><div class="node-subtitle">${knowledgeData.root.subtitle}</div></div>`;
-  tree.appendChild(rootEl);
+  const root = document.createElement('div');
+  root.className = 'root-node';
+  root.innerHTML = `<div class="node-card"><div class="node-title">${DATA.root.title}</div>${DATA.root.sub?`<div class="node-sub">${DATA.root.sub}</div>`:''}</div>`;
+  tree.appendChild(root);
 
-  knowledgeData.phases.forEach(phase => {
-    const tierEl = document.createElement('div');
-    tierEl.className = 'tier';
+  DATA.phases.forEach(phase => {
+    const tier = document.createElement('div');
+    tier.className = 'tier';
+    const label = document.createElement('div');
+    label.className = 'tier-label';
+    label.textContent = phase.label;
+    tier.appendChild(label);
 
-    const labelEl = document.createElement('div');
-    labelEl.className = `tier-label ${phase.labelClass}`;
-    labelEl.textContent = phase.label;
-    tierEl.appendChild(labelEl);
-
-    const nodesRow = document.createElement('div');
-    nodesRow.className = 'tier-nodes';
+    const row = document.createElement('div');
+    row.className = 'tier-nodes';
 
     phase.nodes.forEach(node => {
-      const branchEl = document.createElement('div');
-      const nState = state[node.id] || 0;
-      let branchClass = 'branch';
-      if (nState === STATE_MASTERED) branchClass += ' has-mastered';
-      else if (nState === STATE_INPROGRESS) branchClass += ' has-inprogress';
-      branchEl.className = branchClass;
+      const branch = document.createElement('div');
+      const ns = state[node.id]||0;
+      branch.className = `branch ${ns===S_DONE?'state-done':ns===S_LEARN?'state-learning':''}`;
 
-      const connectorEl = document.createElement('div');
-      connectorEl.className = 'branch-connector';
-      branchEl.appendChild(connectorEl);
+      const line = document.createElement('div');
+      line.className = 'branch-line';
+      branch.appendChild(line);
 
-      const cardEl = document.createElement('div');
-      let cardClass = 'node-card';
-      const stateClass = getNodeStateClass(nState);
-      if (stateClass) cardClass += ` ${stateClass} ${node.phase}-glow`;
-      cardEl.className = cardClass;
-      cardEl.dataset.id = node.id;
+      const card = document.createElement('div');
+      let cls = 'node-card';
+      if (ns===S_LEARN) cls += ' learning';
+      if (ns===S_DONE) cls += ' done';
+      card.className = cls;
+      card.dataset.id = node.id;
 
-      const isCollapsed = collapsed[node.id];
-
-      cardEl.innerHTML = `
-        <div class="particles"></div>
+      const isCol = collapsed[node.id];
+      card.innerHTML = `
         <div class="node-icon">${node.icon}</div>
         <div class="node-title">${node.title}</div>
         <div class="node-desc">${node.desc}</div>
-        <div class="node-toggle ${isCollapsed ? 'collapsed' : ''}" data-node="${node.id}">
-          <span class="toggle-icon">▼</span>
-        </div>
+        <div class="node-toggle ${isCol?'collapsed':''}" data-n="${node.id}"><span class="arrow">▼</span></div>
       `;
 
-      cardEl.addEventListener('click', (e) => {
+      card.addEventListener('click', e => {
         if (e.target.closest('.node-toggle')) return;
-        if (editMode) { handleNodeCycle(node.id, node.phase); }
-        else { toggleCollapse(node.id); }
+        if (editMode) cycleNode(node.id, card);
+        else toggleCol(node.id);
       });
+      card.querySelector('.node-toggle').addEventListener('click', e => { e.stopPropagation(); toggleCol(node.id); });
 
-      cardEl.querySelector('.node-toggle').addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleCollapse(node.id);
-      });
+      branch.appendChild(card);
 
-      branchEl.appendChild(cardEl);
+      if (node.children.length) {
+        const wrap = document.createElement('div');
+        wrap.className = `children-wrap${isCol?' collapsed':''}`;
+        wrap.dataset.p = node.id;
+        const inner = document.createElement('div');
+        inner.className = 'children-inner';
+        const children = document.createElement('div');
+        children.className = 'children';
 
-      if (node.children && node.children.length > 0) {
-        const wrapperEl = document.createElement('div');
-        wrapperEl.className = `children-wrapper${isCollapsed ? ' collapsed' : ''}`;
-        wrapperEl.dataset.parent = node.id;
-
-        const innerEl = document.createElement('div');
-        innerEl.className = 'children-inner';
-        const childrenEl = document.createElement('div');
-        childrenEl.className = 'children';
-
-        node.children.forEach(child => {
-          const childEl = document.createElement('div');
-          const cState = state[child.id] || 0;
-          let childClass = 'child-node';
-          const cStateClass = getNodeStateClass(cState);
-          if (cStateClass) childClass += ` ${cStateClass}`;
-          childEl.className = childClass;
-          childEl.textContent = child.label;
-          childEl.dataset.id = child.id;
-          childEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (editMode) handleChildCycle(child.id, node.id, node.phase);
-          });
-          childrenEl.appendChild(childEl);
+        node.children.forEach(ch => {
+          const el = document.createElement('div');
+          const cs = state[ch.id]||0;
+          let cc = 'child';
+          if (cs===S_LEARN) cc += ' learning';
+          if (cs===S_DONE) cc += ' done';
+          el.className = cc;
+          el.textContent = ch.label;
+          el.dataset.id = ch.id;
+          el.addEventListener('click', e => { e.stopPropagation(); if(editMode) cycleChild(ch.id,node.id,el); });
+          children.appendChild(el);
         });
 
-        innerEl.appendChild(childrenEl);
-        wrapperEl.appendChild(innerEl);
-        branchEl.appendChild(wrapperEl);
+        inner.appendChild(children);
+        wrap.appendChild(inner);
+        branch.appendChild(wrap);
       }
 
-      nodesRow.appendChild(branchEl);
+      row.appendChild(branch);
     });
 
-    tierEl.appendChild(nodesRow);
-    tree.appendChild(tierEl);
+    tier.appendChild(row);
+    tree.appendChild(tier);
   });
 
   updateStats();
 }
 
 // ===== COLLAPSE =====
-function toggleCollapse(nodeId) {
-  collapsed[nodeId] = !collapsed[nodeId];
-  const wrapper = document.querySelector(`.children-wrapper[data-parent="${nodeId}"]`);
-  const toggle = document.querySelector(`.node-toggle[data-node="${nodeId}"]`);
-  if (wrapper) wrapper.classList.toggle('collapsed', collapsed[nodeId]);
-  if (toggle) toggle.classList.toggle('collapsed', collapsed[nodeId]);
+function toggleCol(id) {
+  collapsed[id] = !collapsed[id];
+  const w = document.querySelector(`.children-wrap[data-p="${id}"]`);
+  const t = document.querySelector(`.node-toggle[data-n="${id}"]`);
+  if(w) w.classList.toggle('collapsed', collapsed[id]);
+  if(t) t.classList.toggle('collapsed', collapsed[id]);
 }
 
 function toggleAllCollapse() {
-  const allCollapsed = Object.values(collapsed).every(v => v);
-  const newVal = !allCollapsed;
-  knowledgeData.phases.forEach(p => p.nodes.forEach(n => { collapsed[n.id] = newVal; }));
-  renderTree();
-  document.getElementById('collapseBtn').textContent = newVal ? 'Expand All' : 'Collapse All';
+  const allCol = Object.values(collapsed).every(v=>v);
+  const nv = !allCol;
+  DATA.phases.forEach(p=>p.nodes.forEach(n=>{collapsed[n.id]=nv;}));
+  render();
+  document.getElementById('collapseBtn').textContent = nv?'Expand':'Collapse';
 }
 
-// ===== MASTERY CYCLING =====
-function handleNodeCycle(nodeId, phase) {
-  const newState = cycleState(state[nodeId] || 0);
-  state[nodeId] = newState;
-  // Apply same state to all children
-  knowledgeData.phases.forEach(p => p.nodes.forEach(n => {
-    if (n.id === nodeId) n.children.forEach(c => { state[c.id] = newState; });
+// ===== STATE CYCLING =====
+function cycleNode(id, el) {
+  const nv = cycle(state[id]||0);
+  state[id] = nv;
+  DATA.phases.forEach(p=>p.nodes.forEach(n=>{
+    if(n.id===id) n.children.forEach(c=>{state[c.id]=nv;});
   }));
-  renderTree();
-  if (newState > 0) setTimeout(() => emitParticles(nodeId, newState), 50);
+  render();
+  if (nv > 0) triggerFirework(el, nv);
 }
 
-function handleChildCycle(childId, parentId, phase) {
-  state[childId] = cycleState(state[childId] || 0);
-  // Derive parent state from children
-  let allMastered = true, anyInProgress = false;
-  knowledgeData.phases.forEach(p => p.nodes.forEach(n => {
-    if (n.id === parentId) {
-      n.children.forEach(c => {
-        const s = state[c.id] || 0;
-        if (s !== STATE_MASTERED) allMastered = false;
-        if (s === STATE_INPROGRESS) anyInProgress = true;
-      });
-    }
+function cycleChild(cid, pid, el) {
+  state[cid] = cycle(state[cid]||0);
+  deriveParent(pid);
+  render();
+  if (state[cid] > 0) triggerFirework(el, state[cid]);
+}
+
+function deriveParent(pid) {
+  let allDone=true, anyLearn=false;
+  DATA.phases.forEach(p=>p.nodes.forEach(n=>{
+    if(n.id===pid) n.children.forEach(c=>{
+      const s=state[c.id]||0;
+      if(s!==S_DONE) allDone=false;
+      if(s===S_LEARN) anyLearn=true;
+    });
   }));
-  if (allMastered) state[parentId] = STATE_MASTERED;
-  else if (anyInProgress || state[parentId] === STATE_MASTERED) state[parentId] = STATE_INPROGRESS;
-  else state[parentId] = STATE_UNLEARNED;
-
-  renderTree();
-  if (state[childId] > 0) setTimeout(() => emitParticlesOnChild(childId, state[childId]), 50);
-}
-
-// ===== PARTICLES =====
-function emitParticles(nodeId, stateVal) {
-  const card = document.querySelector(`.node-card[data-id="${nodeId}"]`);
-  if (!card) return;
-  card.classList.add('just-changed');
-  setTimeout(() => card.classList.remove('just-changed'), 500);
-
-  const container = card.querySelector('.particles');
-  if (!container) return;
-  const colorClass = stateVal === STATE_MASTERED ? 'emerald' : 'blue';
-  for (let i = 0; i < 10; i++) {
-    const p = document.createElement('div');
-    p.className = `particle ${colorClass}`;
-    const angle = (Math.PI * 2 * i) / 10;
-    const dist = 35 + Math.random() * 25;
-    p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
-    p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
-    p.style.animationDelay = `${Math.random() * 0.15}s`;
-    container.appendChild(p);
-    setTimeout(() => p.remove(), 800);
-  }
-}
-
-function emitParticlesOnChild(childId, stateVal) {
-  const el = document.querySelector(`.child-node[data-id="${childId}"]`);
-  if (!el) return;
-  el.style.transform = 'scale(1.12)';
-  setTimeout(() => { el.style.transform = ''; }, 250);
+  if(allDone) state[pid]=S_DONE;
+  else if(anyLearn||Object.values(state).some((v,k)=>false)) { // any child learning or some done
+    let anyActive = false;
+    DATA.phases.forEach(p=>p.nodes.forEach(n=>{
+      if(n.id===pid) n.children.forEach(c=>{if((state[c.id]||0)>0) anyActive=true;});
+    }));
+    state[pid] = anyActive ? S_LEARN : S_NONE;
+  } else state[pid]=S_NONE;
 }
 
 // ===== EDIT MODE =====
@@ -1062,41 +867,35 @@ function toggleEditMode() {
   document.body.classList.toggle('edit-mode', editMode);
   const btn = document.getElementById('editBtn');
   btn.classList.toggle('active', editMode);
-  btn.textContent = editMode ? '● Editing' : 'Edit Mode';
+  btn.textContent = editMode ? '● Edit' : 'Edit';
 }
 
 // ===== STATS =====
 function updateStats() {
-  let total = 0, mastered = 0, inprogress = 0;
-  knowledgeData.phases.forEach(phase => {
-    phase.nodes.forEach(node => {
-      node.children.forEach(child => {
-        total++;
-        const s = state[child.id] || 0;
-        if (s === STATE_MASTERED) mastered++;
-        else if (s === STATE_INPROGRESS) inprogress++;
-      });
-    });
-  });
-  document.getElementById('masteredCount').textContent = mastered;
-  document.getElementById('inprogressCount').textContent = inprogress;
-  document.getElementById('totalCount').textContent = total;
-  const pct = total > 0 ? Math.round(((mastered + inprogress * 0.5) / total) * 100) : 0;
-  document.getElementById('progressFill').style.width = `${pct}%`;
-  document.getElementById('progressLabel').textContent = `${pct}%`;
+  let total=0,done=0,learn=0;
+  DATA.phases.forEach(p=>p.nodes.forEach(n=>n.children.forEach(c=>{
+    total++;
+    const s=state[c.id]||0;
+    if(s===S_DONE) done++;
+    else if(s===S_LEARN) learn++;
+  })));
+  document.getElementById('doneCount').textContent=done;
+  document.getElementById('learningCount').textContent=learn;
+  document.getElementById('totalCount').textContent=total;
+  const pct = total>0 ? Math.round(((done+learn*0.5)/total)*100) : 0;
+  document.getElementById('progressFill').style.width=`${pct}%`;
+  document.getElementById('progressLabel').textContent=`${pct}%`;
 }
 
 // ===== TOAST =====
 function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2200);
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
 }
 
 // ===== INIT =====
-loadState();
-renderTree();
+load();
+render();
 </script>
 </body>
 </html>
